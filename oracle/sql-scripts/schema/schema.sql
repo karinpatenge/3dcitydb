@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS ade (
 -- Table codelist
 --
 CREATE TABLE IF NOT EXISTS codelist (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1 MINVALUE 0 MAXVALUE 9223372036854775807 NOCACHE NOCYCLE),
+  id                            NUMBER(38) NOT NULL,
   codelist_type                 VARCHAR2(256),
   url                           VARCHAR2(4000),
   mime_type                     VARCHAR2(256),
