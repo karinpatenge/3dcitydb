@@ -1,5 +1,5 @@
 /*****************************************************************
-* PACKAGE citydb_util
+* PACKAGE citydb_srs
 *
 * utility methods for spatial reference system in the database
 ******************************************************************/
