@@ -28,3 +28,11 @@ docker run -d --name orcl23aifree \
 -v [<host mount point>:]/opt/oracle/data \
 container-registry.oracle.com/database/free:latest
 ```
+
+## Connect to the container
+
+### From outside the container
+
+```sh
+sqlplus citydb/Welcome_1234#@//localhost:1521/freepdb1
+```

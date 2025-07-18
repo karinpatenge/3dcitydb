@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS ade (
 -- Table codelist
 --
 CREATE TABLE IF NOT EXISTS codelist (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38),
   codelist_type                 VARCHAR2(256),
   url                           VARCHAR2(4000),
   mime_type                     VARCHAR2(256),
@@ -188,7 +188,7 @@ ALTER TABLE implicit_geometry ADD CONSTRAINT implicit_geometry_relative_geometry
 -- Table namespace
 --
 CREATE TABLE IF NOT EXISTS namespace (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38),
   alias                         VARCHAR2(256),
   namespace                     VARCHAR2(4000),
   ade_id                        NUMBER(38),
@@ -259,7 +259,7 @@ ALTER TABLE appearance ADD CONSTRAINT appearance_implicit_geometry_fk FOREIGN KE
 -- Table data_type
 --
 CREATE TABLE IF NOT EXISTS datatype (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38),
   supertype_id                  NUMBER(38),
   typename                      VARCHAR2(256),
   is_abstract                   NUMBER(1),
