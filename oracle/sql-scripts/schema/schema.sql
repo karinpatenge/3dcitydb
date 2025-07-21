@@ -34,7 +34,7 @@ DROP TABLE IF EXISTS appear_to_surface_data CASCADE CONSTRAINTS PURGE;
 -- Table address
 --
 CREATE TABLE IF NOT EXISTS address (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
   objectid                      VARCHAR2(256),
   identifier                    VARCHAR2(256),
   identifier_codespace          VARCHAR2(1000),
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS address (
 -- Table ade
 --
 CREATE TABLE IF NOT EXISTS ade (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
   name                          VARCHAR2(1000) NOT NULL,
   description                   VARCHAR2(4000),
   version                       VARCHAR2(256),
@@ -82,7 +82,7 @@ CREATE INDEX codelist_codelist_type_idx ON codelist ( codelist_type );
 -- Table codelist_entry
 --
 CREATE TABLE IF NOT EXISTS codelist_entry (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
 	codelist_id                   NUMBER(38) NOT NULL,
 	code                          VARCHAR2(256),
 	definition                    VARCHAR2(256),
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS database_srs (
 -- Table feature
 --
 CREATE TABLE IF NOT EXISTS feature (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
   objectclass_id                NUMBER(38) NOT NULL,
   objectid                      VARCHAR2(256),
   identifier                    VARCHAR2(256),
@@ -147,7 +147,7 @@ CREATE INDEX feature_valid_to_idx ON feature ( valid_to );
 -- Table geometry_data
 --
 CREATE TABLE IF NOT EXISTS geometry_data (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
   geometry                      SDO_GEOMETRY,
   implicit_geometry             SDO_GEOMETRY,
   geometry_properties           JSON,
@@ -168,7 +168,7 @@ ALTER TABLE geometry_data ADD CONSTRAINT geometry_data_feature_fk FOREIGN KEY ( 
 -- Table implicit_geometry
 --
 CREATE TABLE IF NOT EXISTS implicit_geometry (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
   objectid                      VARCHAR2(256),
   mime_type                     VARCHAR2(256) ,
   mime_type_codespace           VARCHAR2(256),
@@ -201,7 +201,7 @@ ALTER TABLE namespace ADD CONSTRAINT namespace_ade_fk FOREIGN KEY ( ade_id ) REF
 -- Table objectclass
 --
 CREATE TABLE IF NOT EXISTS objectclass (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
   superclass_id                 NUMBER(38),
   classname                     VARCHAR2(256),
   is_abstract                   NUMBER(1),
@@ -224,7 +224,7 @@ ALTER TABLE objectclass ADD CONSTRAINT objectclass_namespace_fk FOREIGN KEY ( na
 -- Table tex_image
 --
 CREATE TABLE IF NOT EXISTS tex_image (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
   image_uri                     VARCHAR2(4000),
   image_data                    BLOB,
   mime_type                     VARCHAR2(256),
@@ -281,7 +281,7 @@ ALTER TABLE datatype ADD CONSTRAINT datatype_namespace_fk FOREIGN KEY ( namespac
 -- Table property
 --
 CREATE TABLE IF NOT EXISTS property (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
   feature_id                    NUMBER(38),
   parent_id                     NUMBER(38),
   datatype_id                   NUMBER(38),
@@ -360,7 +360,7 @@ ALTER TABLE property ADD CONSTRAINT property_val_feature_fk FOREIGN KEY ( val_fe
 -- Table surface_data
 --
 CREATE TABLE IF NOT EXISTS surface_data (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
   objectid                      VARCHAR2(256),
   identifier                    VARCHAR2(256),
   identifier_codespace          VARCHAR2(1000),
@@ -416,7 +416,7 @@ ALTER TABLE surface_data_mapping ADD CONSTRAINT surface_data_mapping_surface_dat
 -- Table appear_to_surface_data
 --
 CREATE TABLE IF NOT EXISTS appear_to_surface_data (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY,
+  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
   appearance_id                 NUMBER(38) NOT NULL,
   surface_data_id               NUMBER(38),
   CONSTRAINT appear_to_surface_data_pk PRIMARY KEY ( id ) ENABLE
