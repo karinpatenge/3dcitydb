@@ -9,35 +9,37 @@
 
 # Fetch & build stage #########################################################
 # ARGS
-ARG BASEIMAGE_TAG='...'
-ARG BUILDER_IMAGE_TAG='...'
+ARG BASEIMAGE_TAG='latest'
+#ARG BUILDER_IMAGE_TAG='latest'
 
 # Base image
-FROM ...:${BUILDER_IMAGE_TAG} AS builder
+#FROM container-registry.oracle.com/database/free:${BUILDER_IMAGE_TAG} AS builder
 
 # Copy source code
-WORKDIR /build
-COPY . /build
+#WORKDIR /build
+#COPY . /build
 
 # Build
-RUN chmod u+x ./gradlew && ./gradlew installDist
+#RUN chmod u+x ./gradlew && ./gradlew installDist
 
 # Runtime stage ###############################################################
 # Base image
-FROM oracle/oracle:${BASEIMAGE_TAG} AS runtime
+FROM container-registry.oracle.com/database/free:${BASEIMAGE_TAG} AS runtime
 
 # Set 3DCityDB version
-ARG CITYDB_VERSION
+ARG CITYDB_VERSION=5.0
 ENV CITYDB_VERSION=${CITYDB_VERSION}
 
 # Copy SQL scripts
 WORKDIR /3dcitydb
-COPY --from=builder /build/build/install/3dcitydb/version.txt .
-COPY --from=builder /build/build/install/3dcitydb/oracle/sql-scripts .
-COPY --from=builder /build/build/install/3dcitydb/oracle/docker-scripts/3dcitydb-initdb.sh /docker-entrypoint-initdb.d/
+COPY sql-scripts .
+COPY DockerScripts/3dcitydb-initdb.sh /docker-entrypoint-initdb.d/setup/
+#COPY --from=builder /build/build/install/3dcitydb/version.txt .
+#COPY --from=builder /build/build/install/3dcitydb/oracle/sql-scripts .
+#COPY --from=builder /build/build/install/3dcitydb/oracle/docker-scripts/3dcitydb-initdb.sh /docker-entrypoint-initdb.d/
 
 # Make init script executable
-RUN chmod +x /docker-entrypoint-initdb.d/3dcitydb-initdb.sh
+#RUN chmod +x /docker-entrypoint-initdb.d/3dcitydb-initdb.sh
 
 # Set labels
 LABEL maintainer=...
