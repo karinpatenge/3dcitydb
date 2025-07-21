@@ -394,7 +394,7 @@ ALTER TABLE surface_data ADD CONSTRAINT surface_data_objectclass_fk FOREIGN KEY 
 -- Table surface_data_mapping
 --
 CREATE TABLE IF NOT EXISTS surface_data_mapping (
-  surface_data_id               NUMBER(38)NOT NULL,
+  surface_data_id               NUMBER(38) NOT NULL,
   geometry_data_id              NUMBER(38) NOT NULL,
   material_mapping              JSON,
   texture_mapping               JSON ,
