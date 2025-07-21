@@ -3,13 +3,17 @@
 #   GitHub              https://github.com/3dcitydb
 ###############################################################################
 
+# !! This file needs review and update !! (Karin) #############################
+
+
+
 # Fetch & build stage #########################################################
 # ARGS
-ARG BASEIMAGE_TAG='17-3.5'
-ARG BUILDER_IMAGE_TAG='21-jdk-jammy'
+ARG BASEIMAGE_TAG='...'
+ARG BUILDER_IMAGE_TAG='...'
 
 # Base image
-FROM eclipse-temurin:${BUILDER_IMAGE_TAG} AS builder
+FROM ...:${BUILDER_IMAGE_TAG} AS builder
 
 # Copy source code
 WORKDIR /build
@@ -36,7 +40,7 @@ COPY --from=builder /build/build/install/3dcitydb/oracle/docker-scripts/3dcitydb
 RUN chmod +x /docker-entrypoint-initdb.d/3dcitydb-initdb.sh
 
 # Set labels
-LABEL maintainer="Bruno Willenborg"
-LABEL maintainer.email="bruno.willenborg(at)list-eco.de"
-LABEL maintainer.organization="LIST Eco GmbH & Co. KG"
-LABEL source.repo="https://github.com/3dcitydb/3dcitydb"
+LABEL maintainer=...
+LABEL maintainer.email=...
+LABEL maintainer.organization=...
+LABEL source.repo=...
