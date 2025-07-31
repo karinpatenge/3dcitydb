@@ -1,3 +1,10 @@
+-----------------------------------------------------
+-- Author: Karin Patenge, Oracle
+-- Last update: July 2025
+-- Status: work in progress
+-- This scripts requires Oracle Database version 23ai
+-----------------------------------------------------
+
 /*****************************************************************
 * CONTENT: PL/SQL Package CITYDB_ENVELOPE
 *
@@ -10,14 +17,14 @@
 
 -- Package declaration
 CREATE OR REPLACE PACKAGE citydb_envelope AS
-  FUNCTION get_feature_envelope (
+  FUNCTION get_feature_envelope(
     fid NUMBER,
     set_envelope INTEGER DEFAULT 0
   ) RETURN SDO_GEOMETRY;
-  FUNCTION box2envelope (
+  FUNCTION box2envelope(
     box SDO_GEOMETRY
   ) RETURN SDO_GEOMETRY;
-  FUNCTION update_bounds (
+  FUNCTION update_bounds(
     old_bbox SDO_GEOMETRY,
     new_bbox SDO_GEOMETRY
   ) RETURN SDO_GEOMETRY;
@@ -26,7 +33,7 @@ CREATE OR REPLACE PACKAGE citydb_envelope AS
     ref_pt SDO_GEOMETRY,
     matrix VARCHAR2
   ) RETURN SDO_GEOMETRY;
---  TYPE params_array AS VARRAY(16) OF DOUBLE;
+  --  TYPE params_array AS VARRAY(16) OF DOUBLE;
 END citydb_envelope;
 /
 
@@ -34,11 +41,11 @@ END citydb_envelope;
 CREATE OR REPLACE PACKAGE BODY citydb_envelope
 AS
 
-/*****************************************************************
-* returns the envelope geometry of a given feature
-* if the parameter set_envelope = 1 (default = 0), the ENVELOPE column of the FEATURE table will be updated
-******************************************************************/
-  FUNCTION get_feature_envelope (
+  /*****************************************************************
+  * returns the envelope geometry of a given feature
+  * if the parameter set_envelope = 1 (default = 0), the ENVELOPE column of the FEATURE table will be updated
+  ******************************************************************/
+  FUNCTION get_feature_envelope(
     fid number,
     set_envelope integer default 0
   ) RETURN SDO_GEOMETRY IS
@@ -88,11 +95,11 @@ AS
   END;
   -- End of function
 
-/*****************************************************************
-* returns the envelope geometry of a given
-******************************************************************/
+  /*****************************************************************
+  * returns the envelope geometry of a given
+  ******************************************************************/
 
-  FUNCTION box2envelope (
+  FUNCTION box2envelope(
     box SDO_GEOMETRY
   ) RETURN SDO_GEOMETRY IS
     bbox    SDO_GEOMETRY;
@@ -120,19 +127,19 @@ AS
         3003,
         db_srid,
         NULL,
-/*
-        MDSYS.sdo_elem_info_array(1, 1003, 1),
-        MDSYS.sdo_ordinate_array(
-          SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 3),
-          SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 3),
-          SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 3),
-          SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 3),
-          SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 3)
- */
+  /*
+          MDSYS.sdo_elem_info_array(1, 1003, 1),
+          MDSYS.sdo_ordinate_array(
+            SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 3),
+            SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 3),
+            SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 3),
+            SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 3),
+            SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 3)
+  */
         MDSYS.sdo_elem_info_array(1, 1003, 3),
         MDSYS.sdo_ordinate_array(
           SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MIN_MBR_ORDINATE(box, 3),
-          SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 3),
+          SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 1), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 2), SDO_GEOM.SDO_MAX_MBR_ORDINATE(box, 3)
         )
       );
     END IF;
@@ -142,9 +149,9 @@ AS
   -- End of function
 
 
-/*****************************************************************
-* returns the envelope geometry of two bounding boxes
-******************************************************************/
+  /*****************************************************************
+  * returns the envelope geometry of two bounding boxes
+  ******************************************************************/
   FUNCTION citydb_pkg.update_bounds(
     old_bbox SDO_GEOMETRY,
     new_bbox SDO_GEOMETRY
@@ -168,14 +175,13 @@ AS
   END;
   -- End of function
 
-/*****************************************************************
-* returns the envelope geometry of a given implicit geometry
-******************************************************************/
+  /*****************************************************************
+  * returns the envelope geometry of a given implicit geometry
+  ******************************************************************/
 
---
--- Translation to PL/SQL yet finished
---
-
+  --
+  -- Translation to PL/SQL not yet finished
+  --
   FUNCTION citydb_pkg.calc_implicit_geometry_envelope(
     gid NUMBER,
     ref_pt SDO_GEOMETRY,
@@ -195,6 +201,7 @@ AS
     WHERE
       gd.id = ig.relative_geometry_id AND ig.id = gid AND gd.implicit_geometry IS NOT NULL;
 
+/* Start checking */
     IF matrix IS NOT NULL THEN
       params := ARRAY(SELECT json_array_elements_text(matrix))::float8[];
       IF array_length(params, 1) < 12 THEN
@@ -205,8 +212,10 @@ AS
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
-        0, 0, 0, 1}';
+        0, 0, 0, 1
+      }';
     END IF;
+/* End checking */
 
     IF ref_pt IS NOT NULL THEN
       params[4] := params[4] + SDO_POINT.X(ref_pt);
@@ -228,7 +237,8 @@ AS
         param => params[11],
         param => params[4],
         param => params[8],
-        param => params[12]);
+        param => params[12]
+      );
     END IF;
 
     RETURN envelope;

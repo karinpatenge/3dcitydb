@@ -1,17 +1,24 @@
+-----------------------------------------------------
+-- Author: Karin Patenge, Oracle
+-- Last update: July 2025
+-- Status: work in progress
+-- This scripts requires Oracle Database version 23ai
+-----------------------------------------------------
+
 /*****************************************************************
-* PACKAGE citydb_srs
+* PL/SQL PACKAGE citydb_srs
 *
 * utility methods for spatial reference system in the database
 ******************************************************************/
 CREATE OR REPLACE PACKAGE citydb_srs
 AS
-  FUNCTION transform_or_null(geom MDSYS.SDO_GEOMETRY, srid NUMBER) RETURN MDSYS.SDO_GEOMETRY;
-  FUNCTION is_coord_ref_sys_3d(schema_srid NUMBER) RETURN NUMBER;
-  FUNCTION check_srid(srsno INTEGER := 0) RETURN VARCHAR;
-  FUNCTION is_db_coord_ref_sys_3d(schema_name VARCHAR2 := USER) RETURN NUMBER;
-  FUNCTION get_dim(col_name VARCHAR2, tab_name VARCHAR2, schema_name VARCHAR2 := USER) RETURN NUMBER;
-  PROCEDURE change_column_srid(tab_name VARCHAR2, col_name VARCHAR2, dim NUMBER, schema_srid NUMBER, transform NUMBER := 0);
-  PROCEDURE change_schema_srid(schema_srid NUMBER, schema_gml_srs_name VARCHAR2, transform NUMBER := 0);
+  FUNCTION transform_or_null (geom MDSYS.SDO_GEOMETRY, srid NUMBER) RETURN MDSYS.SDO_GEOMETRY;
+  FUNCTION is_coord_ref_sys_3d (schema_srid NUMBER) RETURN NUMBER;
+  FUNCTION check_srid (srsno INTEGER := 0) RETURN VARCHAR;
+  FUNCTION is_db_coord_ref_sys_3d (schema_name VARCHAR2 := USER) RETURN NUMBER;
+  FUNCTION get_dim (col_name VARCHAR2, tab_name VARCHAR2, schema_name VARCHAR2 := USER) RETURN NUMBER;
+  PROCEDURE change_column_srid (tab_name VARCHAR2, col_name VARCHAR2, dim NUMBER, schema_srid NUMBER, transform NUMBER := 0);
+  PROCEDURE change_schema_srid (schema_srid NUMBER, schema_gml_srs_name VARCHAR2, transform NUMBER := 0);
 END citydb_srs;
 /
 
@@ -24,7 +31,7 @@ AS
   * @param srid the SRID of the coordinate system to be used for the transformation.
   * @return MDSYS.SDO_GEOMETRY the transformed geometry representation
   ******************************************************************/
-  FUNCTION transform_or_null(geom MDSYS.SDO_GEOMETRY, srid NUMBER)
+  FUNCTION transform_or_null (geom MDSYS.SDO_GEOMETRY, srid NUMBER)
     RETURN MDSYS.SDO_GEOMETRY
   IS
   BEGIN
@@ -41,7 +48,7 @@ AS
   * @param srid the SRID of the coordinate system to be checked
   * @return NUMBER the boolean result encoded as number: 0 = false, 1 = true
   ******************************************************************/
-  FUNCTION is_coord_ref_sys_3d(schema_srid NUMBER)
+  FUNCTION is_coord_ref_sys_3d (schema_srid NUMBER)
     RETURN NUMBER
   IS
     is_3d NUMBER := 0;
@@ -60,7 +67,7 @@ AS
   * @param srsno     the chosen SRID to be further used in the database
   * @return VARCHAR2  status of srid check
   *******************************************************************/
-  FUNCTION check_srid(srsno INTEGER DEFAULT 0)
+  FUNCTION check_srid (srsno INTEGER DEFAULT 0)
     RETURN VARCHAR2
   IS
     schema_srid INTEGER;
@@ -85,7 +92,7 @@ AS
   *
   * @return NUMBER the boolean result encoded as number: 0 = false, 1 = true
   ******************************************************************/
-  FUNCTION is_db_coord_ref_sys_3d(schema_name VARCHAR2 := USER)
+  FUNCTION is_db_coord_ref_sys_3d (schema_name VARCHAR2 := USER)
     RETURN NUMBER
   IS
     schema_srid NUMBER;
@@ -104,7 +111,7 @@ AS
   * @param schema_name name of schema
   * @RETURN NUMBER number of dimension
   ******************************************************************/
-  FUNCTION get_dim(
+  FUNCTION get_dim (
     col_name VARCHAR2,
     tab_name VARCHAR2,
     schema_name VARCHAR2 := USER
@@ -141,7 +148,7 @@ AS
   * @param schema_srid the SRID of the coordinate system to be further used in the database
   * @param transform 1 if existing data shall be transformed, 0 if not
   ******************************************************************/
-  PROCEDURE change_column_srid(
+  PROCEDURE change_column_srid (
     tab_name VARCHAR2,
     col_name VARCHAR2,
     dim NUMBER,
@@ -236,7 +243,7 @@ AS
   * @param schema_gml_srs_name the GML_SRS_NAME of the coordinate system to be further used in the database
   * @param transform 1 if existing data shall be transformed, 0 if not
   ******************************************************************/
-  PROCEDURE change_schema_srid(
+  PROCEDURE change_schema_srid (
     schema_srid NUMBER,
     schema_gml_srs_name VARCHAR2,
     transform NUMBER := 0

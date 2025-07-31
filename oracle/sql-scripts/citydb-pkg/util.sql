@@ -1,3 +1,10 @@
+-----------------------------------------------------
+-- Author: Karin Patenge, Oracle
+-- Last update: July 2025
+-- Status: work in progress
+-- This scripts requires Oracle Database version 23ai
+-----------------------------------------------------
+
 /*****************************************************************
 * TYPE STRARRAY
 *
