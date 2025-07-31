@@ -1,4 +1,11 @@
-DELETE FROM codelist_entry;
+-----------------------------------------------------
+-- Author: Karin Patenge, Oracle
+-- Last update: June 2025
+-- Status: to be reviewed
+-- This scripts requires Oracle Database version 23ai
+-----------------------------------------------------
+
+TRUNCATE TABLE codelist_entry DROP STORAGE;
 
 -- Building class --
 

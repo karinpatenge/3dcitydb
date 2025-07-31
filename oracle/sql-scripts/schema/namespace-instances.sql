@@ -1,4 +1,11 @@
-DELETE FROM namespace;
+-----------------------------------------------------
+-- Author: Karin Patenge, Oracle
+-- Last update: June 2025
+-- Status: to be reviewed
+-- This scripts requires Oracle Database version 23ai
+-----------------------------------------------------
+
+TRUNCATE TABLE namespace DROP STORAGE;
 
 -- Core Module --
 

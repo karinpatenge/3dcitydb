@@ -1,7 +1,7 @@
 -----------------------------------------------------
 -- Author: Karin Patenge, Oracle
--- Last update: Mar 20, 2025
---
+-- Last update: June 2025
+-- Status: to be reviewed
 -- This scripts requires Oracle Database version 23ai
 -----------------------------------------------------
 
@@ -201,14 +201,14 @@ ALTER TABLE namespace ADD CONSTRAINT namespace_ade_fk FOREIGN KEY ( ade_id ) REF
 -- Table objectclass
 --
 CREATE TABLE IF NOT EXISTS objectclass (
-  id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1),
+  id                            NUMBER(38) NOT NULL,
   superclass_id                 NUMBER(38),
   classname                     VARCHAR2(256),
   is_abstract                   NUMBER(1),
   is_toplevel                   NUMBER(1),
   ade_id                        NUMBER(38),
   namespace_id                  NUMBER(38),
-  schema                        JSON,
+  schema                        BFILE,
   CONSTRAINT objectclass_pk PRIMARY KEY ( id ) ENABLE
 );
 
@@ -265,7 +265,7 @@ CREATE TABLE IF NOT EXISTS datatype (
   is_abstract                   NUMBER(1),
   ade_id                        NUMBER(38),
   namespace_id                  NUMBER(38),
-  schema                        JSON,
+  schema                        BFILE,
   CONSTRAINT datatype_pk PRIMARY KEY ( id ) ENABLE
 );
 
