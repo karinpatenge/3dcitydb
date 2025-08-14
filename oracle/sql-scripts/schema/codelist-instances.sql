@@ -16,10 +16,3 @@ VALUES
   (2, 'bldg:BuildingUsageValue', 'http://www.sig3d.org/codelists/standard/building/2.0/_AbstractBuilding_usage.xml', 'application/xml');
 
 COMMIT;
-
-
-
-
-
-
-

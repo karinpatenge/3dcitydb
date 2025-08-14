@@ -23,7 +23,7 @@ AS
   TYPE id_array IS TABLE OF NUMBER;
 
   /******************************************************************
-  * truncates all data tables
+  * Truncate all data tables
   ******************************************************************/
   PROCEDURE cleanup_schema
   AS
@@ -55,7 +55,7 @@ AS
 
 
   /******************************************************************
-  * delete from FEATURE table based on an id array
+  * Delete from FEATURE table based on an ID array
   ******************************************************************/
   FUNCTION delete_feature ( ids IN id_array )
   RETURN id_array

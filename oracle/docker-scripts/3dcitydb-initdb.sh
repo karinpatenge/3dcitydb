@@ -114,6 +114,10 @@ echo "CREATE USER IF NOT EXISTS $DBUSER identified by $ORACLE_PWD QUOTA UNLIMITE
 echo "Creating user $DBUSER ... done!"
 echo
 
+# Create directory for schema mappings
+echo "CREATE OR REPLACE DIRECTORY schema_mapping_dir AS '/3DCITYDB/schema-mapping' ;
+      GRANT READ ON DIRECTORY schema_mapping_dir TO $DBUSER;" | sqlplus system/"$ORACLE_PWD"@"$DBHOST":"$DBPORT"/"$ORACLE_PDB"
+
 # Enable GeoRaster (required since Oracle 19c)
 echo "EXECUTE SDO_GEOR_ADMIN.ENABLEGEORASTER;" | sqlplus "$DBUSER"/"$ORACLE_PWD"@"$DBHOST":"$DBPORT"/"$ORACLE_PDB"
 
