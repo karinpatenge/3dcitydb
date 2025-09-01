@@ -13,13 +13,12 @@
 CREATE OR REPLACE PACKAGE citydb_srs
 AS
   FUNCTION transform_or_null (geom IN MDSYS.SDO_GEOMETRY, srid IN INTEGER) RETURN MDSYS.SDO_GEOMETRY;
-  FUNCTION check_srid (srsno IN INTEGER DEFAULT 0) RETURN INTEGER;
+  FUNCTION check_srid (srid IN INTEGER DEFAULT 0) RETURN INTEGER;
   FUNCTION is_coord_ref_sys_3d (schema_srid IN INTEGER) RETURN INTEGER;
   FUNCTION is_db_coord_ref_sys_3d RETURN INTEGER;
-  PROCEDURE change_column_srid (tab_name IN VARCHAR2, col_name IN VARCHAR2, dim IN INTEGER, schema_srid IN INTEGER, transform IN INTEGER);
-
-  PROCEDURE change_schema_srid (schema_srid NUMBER, schema_gml_srs_name VARCHAR2, transform NUMBER := 0);
-  FUNCTION get_dim (col_name VARCHAR2, tab_name VARCHAR2, schema_name VARCHAR2 := USER) RETURN NUMBER;
+  FUNCTION get_dim (schema_name VARCHAR2 := USER, table_name VARCHAR2, column_name VARCHAR2) RETURN INTEGER;
+  PROCEDURE change_column_srid (table_name IN VARCHAR2, column_name IN VARCHAR2, dim IN INTEGER, target_srid IN INTEGER, transform IN INTEGER DEFAULT 0);
+  PROCEDURE change_schema_srid (schema_srid IN INTEGER, schema_gml_srs_name IN VARCHAR2, transform IN INTEGER DEFAULT 0);
 END citydb_srs;
 /
 
@@ -37,7 +36,7 @@ AS
   *   - SDO_GEOMETRY => The transformed geometry representation
   ******************************************************************/
   FUNCTION transform_or_null (
-    geom iN MDSYS.SDO_GEOMETRY,
+    geom IN MDSYS.SDO_GEOMETRY,
     srid IN INTEGER
   )
   RETURN MDSYS.SDO_GEOMETRY
@@ -60,7 +59,7 @@ AS
   *   - BOOLEAN => The boolean result encoded as INTEGER: 0 = false, 1 = true
   *******************************************************************/
   FUNCTION check_srid (
-    srsno IN INTEGER DEFAULT 0
+    srid IN INTEGER DEFAULT 0
   )
   RETURN INTEGER
   IS
@@ -69,7 +68,7 @@ AS
   BEGIN
     SELECT COUNT(srid) INTO l_srid
     FROM mdsys.cs_srs
-    WHERE srid = srsno;
+    WHERE srid = srid;
 
     IF l_srid = 0 THEN
       RAISE unknown_srs_ex;
@@ -79,7 +78,7 @@ AS
 
     EXCEPTION
       WHEN unknown_srs_ex THEN
-        dbms_output.put_line('Table MDSYS.CS_SRS does not contain the SRID ' || srsno || '.');
+        dbms_output.put_line('Table MDSYS.CS_SRS does not contain the SRID ' || srid || '.');
         RETURN 0;
 
   END check_srid;
@@ -133,6 +132,46 @@ AS
   END is_db_coord_ref_sys_3d;
 
   /*****************************************************************
+  * get_dim
+  *
+  * @param schema_name name of schema
+  * @param tab_name name of the table
+  * @param col_name name of the column
+  * @RETURN INTEGER number of dimension
+  ******************************************************************/
+
+ /* ToDo: Check if parameter SCHEMA_NAME can be omitted by referencing metadata view USER_SDO_GEOM_METADATA */
+
+  FUNCTION get_dim (
+    schema_name IN VARCHAR2 := USER,
+    table_name IN VARCHAR2,
+    column_name IN VARCHAR2
+    ) RETURN INTEGER
+  IS
+    l_is_3d INTEGER := 0;
+--    is_3d NUMBER(1, 0);
+  BEGIN
+    SELECT
+      3
+    INTO
+      l_is_3d
+    FROM
+      all_sdo_geom_metadata m,
+      TABLE(m.diminfo) dim
+    WHERE
+      m.table_name = upper(table_name)
+      AND m.column_name = upper(column_name)
+      AND dim.sdo_dimname = 'Z'
+      AND m.owner = upper(schema_name);
+
+    RETURN l_is_3d;
+
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RETURN 2;
+  END get_dim;
+
+  /*****************************************************************
   * Procedure CHANGE_COLUMN_SRID
   *
   * Parameters:
@@ -144,12 +183,12 @@ AS
   *   - GEOM_TYPE => The geometry type of the given spatial column
   ******************************************************************/
   PROCEDURE change_column_srid (
-    table_name    IN VARCHAR2,
-    column_name   IN VARCHAR2,
-    dim           IN INTEGER,
-    target_srid   IN INTEGER,
-    transform     IN INTEGER DEFAULT 0,
-    geom_type     IN VARCHAR2 DEFAULT 'GEOMETRY'
+    table_name  IN VARCHAR2,
+    column_name IN VARCHAR2,
+    dim         IN INTEGER,
+    target_srid IN INTEGER,
+    transform   IN INTEGER DEFAULT 0
+    -- geom_type     IN VARCHAR2 DEFAULT 'GEOMETRY'
   )
   IS
     l_schema_name   VARCHAR2(128);
@@ -157,7 +196,7 @@ AS
     l_column_name   VARCHAR2(128);
     l_sidx_name     VARCHAR2(128);
     l_sidx_dim      VARCHAR2(128);
-    l_geom_type     VARCHAR2(128);
+    -- l_geom_type     VARCHAR2(128);
     l_is_versioned  BOOLEAN;
     l_is_valid      VARCHAR2(128);
   BEGIN
@@ -179,7 +218,7 @@ AS
     WHERE sdo_index_owner = l_schema_name AND sdo_table_name = l_table_name AND sdo_column_name = l_column_name;
 
     -- Drop the existing spatial index
-    EXECUTE IMMEDIATE 'DROP INDEX ' || l_sidx_name || ' FORCE';
+    EXECUTE IMMEDIATE 'DROP INDEX IF EXISTS ' || l_sidx_name || ' FORCE';
 
     -- Delete existing USER_SDO_GEOM_METADATA for the old SRID
     EXECUTE IMMEDIATE 'DELETE FROM user_sdo_geom_metadata WHERE table_name = ' || l_table_name || ' AND column_name = ' || l_column_name;
@@ -188,7 +227,7 @@ AS
     EXECUTE IMMEDIATE 'INSERT INTO user_sdo_geom_metadata ...';
 
     -- Recreate the spatial index for the new SRID
-    EXECUTE IMMEDIATE 'CREATE INDEX ' || l_sidx_name || ' ON ' || l_table_name || ' ( ' || l_column_name || ') INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2 PARAMETERS ( '' sdo_indx_dims = ' || l_sidx_dim || ''') ';
+    EXECUTE IMMEDIATE 'CREATE INDEX IF NOT EXISTS ' || l_sidx_name || ' ON ' || l_table_name || ' ( ' || l_column_name || ') INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2 PARAMETERS ( '' sdo_indx_dims = ' || l_sidx_dim || ''') ';
 
 
     IF transform <> 0 THEN
@@ -201,12 +240,6 @@ AS
 
   END change_column_srid;
 
-
-
-
-
-
-
   /*****************************************************************
   * change_schema_srid
   *
@@ -215,15 +248,15 @@ AS
   * @param transform 1 if existing data shall be transformed, 0 if not
   ******************************************************************/
   PROCEDURE change_schema_srid (
-    schema_srid NUMBER,
-    schema_gml_srs_name VARCHAR2,
-    transform NUMBER := 0
+    schema_srid IN INTEGER,
+    schema_gml_srs_name IN VARCHAR2,
+    transform IN INTEGER DEFAULT 0
   )
   IS
   BEGIN
     -- check if user selected srid is valid
     -- will raise an exception if not
-    IF citydb_srs.check_srid(schema_srid) <> 'SRID ok' THEN
+    IF citydb_srs.check_srid(schema_srid) = 0 THEN
       dbms_output.put_line('The chosen SRID ' || schema_srid || ' was not found in the MDSYS.CS_SRS table.');
       RETURN;
     END IF;
@@ -237,13 +270,11 @@ AS
       SELECT
         table_name AS t,
         column_name AS c,
-        citydb_srs.get_dim(column_name, table_name, USER) AS dim
+        citydb_srs.get_dim(USER, table_name, column_name) AS dim
       FROM
         user_sdo_geom_metadata
       WHERE
-        column_name <> 'IMPLICIT_GEOMETRY'
-        AND column_name <> 'RELATIVE_OTHER_GEOM'
-        AND column_name <> 'TEXTURE_COORDINATES'
+        column_name NOT IN ('IMPLICIT_GEOMETRY', 'RELATIVE_OTHER_GEOM', 'TEXTURE_COORDINATES')
       ORDER BY
         table_name,
         column_name
@@ -253,45 +284,6 @@ AS
     END LOOP;
     dbms_output.put_line('Schema SRID successfully changed to ' || schema_srid || '.');
   END;
-
-
-  /*****************************************************************
-  * get_dim
-  *
-  * @param col_name name of the column
-  * @param tab_name name of the table
-  * @param schema_name name of schema
-  * @RETURN NUMBER number of dimension
-  ******************************************************************/
-  FUNCTION get_dim (
-    col_name VARCHAR2,
-    tab_name VARCHAR2,
-    schema_name VARCHAR2 := USER
-    ) RETURN NUMBER
-  IS
-    is_3d NUMBER(1, 0);
-  BEGIN
-    SELECT
-      3
-    INTO
-      is_3d
-    FROM
-      all_sdo_geom_metadata m,
-      TABLE(m.diminfo) dim
-    WHERE
-      m.table_name = upper(tab_name)
-      AND m.column_name = upper(col_name)
-      AND dim.sdo_dimname = 'Z'
-      AND m.owner = upper(schema_name);
-
-    RETURN is_3d;
-
-    EXCEPTION
-      WHEN NO_DATA_FOUND THEN
-        RETURN 2;
-  END;
-
-
 
 END citydb_srs;
 /
