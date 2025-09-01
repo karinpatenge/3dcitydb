@@ -91,7 +91,7 @@ create a GitHub issue.
 
 Latest release
 --------------
-The latest stable release of the 3D City Database is 5.0.0.
+The latest stable release of the 3D City Database is 5.1.0.
 
 You can download the latest release as well as previous releases from the
 [releases section](https://github.com/3dcitydb/3dcitydb/releases).
@@ -108,7 +108,7 @@ database system. Database versions that have reached end-of-life are no longer s
 Documentation and literature
 ----------------------------
 A complete and comprehensive user manual on the 3D City Database V5 and its tools is
-available [online](https://3dcitydb.github.io/3dcitydb-mkdocs/).
+available [online](https://docs.3dcitydb.org/).
 
 An Open Access paper on the 3DCityDB (version 4) has been published in the International
 Journal on Open Geospatial Data, Software and Standards 3 (5), 2018: 
@@ -150,7 +150,7 @@ The setup procedure requires the following mandatory user inputs:
 
 Afterwards, the script will start the setup procedure and invoke additional
 SQL scripts in the background. Please refer to the 
-[user manual](https://3dcitydb.github.io/3dcitydb-mkdocs/first-steps/)
+[user manual](https://docs.3dcitydb.org/latest/first-steps/)
 of the 3D City Database for a comprehensive step-by-step guide.
 
 Database deletion
@@ -170,7 +170,7 @@ or from Github container registry at
 [https://github.com/orgs/3dcitydb/packages?ecosystem=container](https://github.com/orgs/3dcitydb/packages?ecosystem=container).
 
 A comprehensive documentation on how to use the 3D City Database with Docker can be found in the
-[online user manual](https://3dcitydb.github.io/3dcitydb-mkdocs/3dcitydb/docker/).
+[online user manual](https://docs.3dcitydb.org/latest/3dcitydb/docker/).
 
 Building
 --------
@@ -233,12 +233,9 @@ has been mapped onto different data encodings (i.e. data exchange formats).
 The [GML encoding](https://docs.ogc.org/is/21-006r2/21-006r2.html) 
 ("CityGML files") is a complete mapping of all aspects of the conceptual data model 
 of CityGML 3.0 onto XML and guarantees lossless data transfer of any kind of CityGML data. 
-[CityJSON](https://www.ogc.org/publications/standard/cityjson/) is a mapping of a 
+[CityJSON](https://www.ogc.org/standards/cityjson/) is a mapping of a
 subset of CityGML 3.0 onto a simpler, JSON-based file format. The 3DCityDB can be 
 considered a third type of encoding of the CityGML data model - in this case, data 
 is encoded within the tables of a spatial relational database schema.
 
 CityGML is an international OGC standard and can be used free of charge.
-
-
-
