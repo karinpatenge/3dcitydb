@@ -16,7 +16,7 @@ AS
   FUNCTION check_srid (srid IN INTEGER DEFAULT 0) RETURN INTEGER;
   FUNCTION is_coord_ref_sys_3d (schema_srid IN INTEGER) RETURN INTEGER;
   FUNCTION is_db_coord_ref_sys_3d RETURN INTEGER;
-  FUNCTION get_dim (schema_name VARCHAR2 := USER, table_name VARCHAR2, column_name VARCHAR2) RETURN INTEGER;
+  FUNCTION get_dim (table_name VARCHAR2, column_name VARCHAR2) RETURN INTEGER;
   PROCEDURE change_column_srid (table_name IN VARCHAR2, column_name IN VARCHAR2, dim IN INTEGER, target_srid IN INTEGER, transform IN INTEGER DEFAULT 0);
   PROCEDURE change_schema_srid (schema_srid IN INTEGER, schema_gml_srs_name IN VARCHAR2, transform IN INTEGER DEFAULT 0);
 END citydb_srs;
@@ -139,30 +139,24 @@ AS
   * @param col_name name of the column
   * @RETURN INTEGER number of dimension
   ******************************************************************/
-
- /* ToDo: Check if parameter SCHEMA_NAME can be omitted by referencing metadata view USER_SDO_GEOM_METADATA */
-
   FUNCTION get_dim (
-    schema_name IN VARCHAR2 := USER,
     table_name IN VARCHAR2,
     column_name IN VARCHAR2
     ) RETURN INTEGER
   IS
     l_is_3d INTEGER := 0;
---    is_3d NUMBER(1, 0);
   BEGIN
     SELECT
       3
     INTO
       l_is_3d
     FROM
-      all_sdo_geom_metadata m,
+      user_sdo_geom_metadata m,
       TABLE(m.diminfo) dim
     WHERE
       m.table_name = upper(table_name)
       AND m.column_name = upper(column_name)
-      AND dim.sdo_dimname = 'Z'
-      AND m.owner = upper(schema_name);
+      AND dim.sdo_dimname = 'Z';
 
     RETURN l_is_3d;
 
@@ -182,6 +176,9 @@ AS
   *   - TRANSFORM => 1 if existing data shall be transformed, 0 if not
   *   - GEOM_TYPE => The geometry type of the given spatial column
   ******************************************************************/
+
+  /* ToDo: More parameters needed for DIMINFO and TOLERANCE */
+
   PROCEDURE change_column_srid (
     table_name  IN VARCHAR2,
     column_name IN VARCHAR2,
@@ -223,7 +220,8 @@ AS
     -- Delete existing USER_SDO_GEOM_METADATA for the old SRID
     EXECUTE IMMEDIATE 'DELETE FROM user_sdo_geom_metadata WHERE table_name = ' || l_table_name || ' AND column_name = ' || l_column_name;
 
-    -- Insert SDO metadata for the new SRID
+    -- Insert SDO metadata for the new SRID. Values needed: TABLE_NAME, COLUMN_NAME, DIMINFO (X, Y, Z), SRID
+    /* ToDo: Do a correct INSERT of SDO metadata */
     EXECUTE IMMEDIATE 'INSERT INTO user_sdo_geom_metadata ...';
 
     -- Recreate the spatial index for the new SRID
@@ -270,11 +268,12 @@ AS
       SELECT
         table_name AS t,
         column_name AS c,
-        citydb_srs.get_dim(USER, table_name, column_name) AS dim
+        citydb_srs.get_dim(table_name, column_name) AS dim
       FROM
         user_sdo_geom_metadata
       WHERE
-        column_name NOT IN ('IMPLICIT_GEOMETRY', 'RELATIVE_OTHER_GEOM', 'TEXTURE_COORDINATES')
+        /* Q: Why is this column excluded? */
+        column_name <> 'IMPLICIT_GEOMETRY'
       ORDER BY
         table_name,
         column_name
