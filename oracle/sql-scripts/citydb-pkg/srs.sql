@@ -1,9 +1,11 @@
 -----------------------------------------------------
 -- Author: Karin Patenge, Oracle
--- Last update: July 2025
--- Status: work in progress
+-- Last update: Aug 2025
+-- Status: Draft finished
 -- This scripts requires Oracle Database version 23ai
 -----------------------------------------------------
+
+/* ToDo: Add annotations (See https://blogs.oracle.com/coretec/post/annotations-the-new-metadata-in-23c) */
 
 /*****************************************************************
 * PL/SQL PACKAGE citydb_srs

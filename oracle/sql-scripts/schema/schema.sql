@@ -1,10 +1,11 @@
 -----------------------------------------------------
 -- Author: Karin Patenge, Oracle
--- Last update: June 2025
+-- Last update: Aug 2025
 -- Status: to be reviewed
 -- This scripts requires Oracle Database version 23ai
 -----------------------------------------------------
 
+/* ToDo: Replace comments with annotations (See https://blogs.oracle.com/coretec/post/annotations-the-new-metadata-in-23c) */
 --
 -- Clean up 3DCityDB tables
 --
