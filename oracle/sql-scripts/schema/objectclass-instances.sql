@@ -1,25 +1,21 @@
 -----------------------------------------------------
 -- Author: Karin Patenge, Oracle
--- Last update: July 2025
+-- Last update: September 2025
 -- Status: to be reviewed
 -- This scripts requires Oracle Database version 23ai
 -----------------------------------------------------
 
------------------------------------------------------
--- Notes for reviewers:
---   Implementation using BFILE
---   Alternative approach: Create domains with JSON VALIDATE'<json-schema>'
---     (See https://blogs.oracle.com/coretec/post/less-coding-with-sql-domains-in-23c)
------------------------------------------------------
-
 TRUNCATE TABLE objectclass DROP STORAGE;
-
 
 -- Core Module --
 
 INSERT INTO objectclass (ID, SUPERCLASS_ID, CLASSNAME, IS_ABSTRACT, IS_TOPLEVEL, NAMESPACE_ID, SCHEMA)
 VALUES
-  (1, null, 'Undefined', 1, 0, 1, BFILENAME('SCHEMA_MAPPING_DIR','feature-types/core/Undefined.json')),
+  (1, null, 'Undefined', 1, 0, 1, '{
+  "identifier": "core:Undefined",
+  "description": "Undefined object class.",
+  "table": "feature"
+  }'),
   (2, null, 'AbstractObject', 1, 0, 1, BFILENAME('SCHEMA_MAPPING_DIR','feature-types/core/AbstractObject.json')),
   (3, 2, 'AbstractFeature', 1, 0, 1, BFILENAME('SCHEMA_MAPPING_DIR','feature-types/core/AbstractFeature.json')),
   (4, null, 'Address', 0, 0, 1, BFILENAME('SCHEMA_MAPPING_DIR','feature-types/core/Address.json')),
