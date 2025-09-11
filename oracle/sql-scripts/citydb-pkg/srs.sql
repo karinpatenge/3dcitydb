@@ -14,13 +14,14 @@
 ******************************************************************/
 CREATE OR REPLACE PACKAGE citydb_srs
 AS
-  FUNCTION transform_or_null (geom IN MDSYS.SDO_GEOMETRY, srid IN INTEGER) RETURN MDSYS.SDO_GEOMETRY;
-  FUNCTION check_srid (srid IN INTEGER DEFAULT 0) RETURN INTEGER;
-  FUNCTION is_coord_ref_sys_3d (schema_srid IN INTEGER) RETURN INTEGER;
+  FUNCTION transform_or_null (p_geom IN MDSYS.SDO_GEOMETRY, p_srid IN INTEGER) RETURN MDSYS.SDO_GEOMETRY;
+  FUNCTION check_srid (p_srid IN INTEGER DEFAULT 0) RETURN INTEGER;
+  FUNCTION is_coord_ref_sys_3d (p_schema_srid IN INTEGER) RETURN INTEGER;
   FUNCTION is_db_coord_ref_sys_3d RETURN INTEGER;
-  FUNCTION get_dim (table_name VARCHAR2, column_name VARCHAR2) RETURN INTEGER;
-  PROCEDURE change_column_srid (table_name IN VARCHAR2, column_name IN VARCHAR2, dim IN INTEGER, target_srid IN INTEGER, transform IN INTEGER DEFAULT 0);
-  PROCEDURE change_schema_srid (schema_srid IN INTEGER, schema_gml_srs_name IN VARCHAR2, transform IN INTEGER DEFAULT 0);
+  FUNCTION get_dim (p_table_name VARCHAR2, p_column_name VARCHAR2) RETURN INTEGER;
+  PROCEDURE change_column_srid (p_table_name IN VARCHAR2, p_column_name IN VARCHAR2, p_dim IN INTEGER, p_target_srid IN INTEGER, p_transform IN INTEGER DEFAULT 0);
+  PROCEDURE change_schema_srid (p_schema_srid IN INTEGER, p_schema_gml_srs_name IN VARCHAR2, p_transform IN INTEGER DEFAULT 0);
+  FUNCTION get_coord_ref_sys_info (p_srid IN INTEGEGER, p_coord_ref_sys_name OUT VARCHAR2, p_coord_ref_sys_kind VARCHAR2, p_wktext OUT VARCHAR2);
 END citydb_srs;
 /
 
@@ -38,14 +39,15 @@ AS
   *   - SDO_GEOMETRY => The transformed geometry representation
   ******************************************************************/
   FUNCTION transform_or_null (
-    geom IN MDSYS.SDO_GEOMETRY,
-    srid IN INTEGER
+    p_geom IN MDSYS.SDO_GEOMETRY,
+    p_srid IN INTEGER
   )
   RETURN MDSYS.SDO_GEOMETRY
   IS
+
   BEGIN
-    IF geom IS NOT NULL THEN
-      RETURN sdo_cs.transform(geom, srid);
+    IF p_geom IS NOT NULL THEN
+      RETURN sdo_cs.transform(p_geom, p_srid);
     ELSE
       RETURN NULL;
     END IF;
@@ -61,16 +63,20 @@ AS
   *   - BOOLEAN => The boolean result encoded as INTEGER: 0 = false, 1 = true
   *******************************************************************/
   FUNCTION check_srid (
-    srid IN INTEGER DEFAULT 0
+    p_srid IN INTEGER DEFAULT 0
   )
   RETURN INTEGER
   IS
     l_srid INTEGER;
     unknown_srs_ex EXCEPTION;
+
   BEGIN
-    SELECT COUNT(srid) INTO l_srid
-    FROM mdsys.cs_srs
-    WHERE srid = srid;
+    SELECT
+      COUNT(srid) INTO l_srid
+    FROM
+      mdsys.cs_srs
+    WHERE
+      srid = p_srid;
 
     IF l_srid = 0 THEN
       RAISE unknown_srs_ex;
@@ -95,15 +101,15 @@ AS
   *   - INTEGER => The boolean result encoded as INTEGER: 0 = false, 1 = true
   ******************************************************************/
   FUNCTION is_coord_ref_sys_3d (
-    schema_srid IN INTEGER
+    p_schema_srid IN INTEGER
   )
     RETURN INTEGER
   IS
     l_is_3d INTEGER := 0;
   BEGIN
     SELECT COALESCE (
-      (SELECT 1 FROM sdo_crs_compound WHERE srid = schema_srid),
-      (SELECT 1 FROM sdo_crs_geographic3d WHERE srid = schema_srid),
+      (SELECT 1 FROM sdo_crs_compound WHERE srid = p_schema_srid),
+      (SELECT 1 FROM sdo_crs_geographic3d WHERE srid = p_schema_srid),
       0
     ) INTO l_is_3d
     FROM dual;
@@ -120,14 +126,14 @@ AS
   FUNCTION is_db_coord_ref_sys_3d
   RETURN INTEGER
   IS
-    l_srid INTEGER;
-    l_schema_name VARCHAR2(128);
+    i_srid INTEGER;
+    v_schema VARCHAR2(128);
   BEGIN
-    l_schema_name := SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA');
+    v_schema := SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA');
     EXECUTE IMMEDIATE
-      'SELECT srid FROM ' || DBMS_ASSERT.SCHEMA_NAME(l_schema_name) || '.database_srs'
-      INTO l_srid;
-    RETURN is_coord_ref_sys_3d(l_srid);
+      'SELECT srid FROM ' || DBMS_ASSERT.SCHEMA_NAME(v_schema) || '.database_srs'
+      INTO i_srid;
+    RETURN is_coord_ref_sys_3d(i_srid);
 
   EXCEPTION WHEN NO_DATA_FOUND THEN
     RETURN 0;

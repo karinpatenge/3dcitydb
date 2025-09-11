@@ -6,6 +6,67 @@
 -----------------------------------------------------
 
 /*****************************************************************
+* PL/SQL PACKAGE citydb_util
+*
+* Utility methods ...
+******************************************************************/
+CREATE OR REPLACE PACKAGE citydb_util
+AS
+  TYPE citydb_version_rec AS OBJECT (...);
+  FUNCTION get_current_schema RETURN VARCHAR2;
+
+END citydb_util;
+/
+
+CREATE OR REPLACE PACKAGE BODY citydb_util
+AS
+
+  /******************************************************************
+  * Type definitions
+  ******************************************************************/
+  TYPE citydb_version_rec AS OBJECT (
+    version         VARCHAR2(100),
+    major_version   INTEGER,
+    minor_version   INTEGER,
+    minor_revision  INTEGER
+  );
+
+  /******************************************************************
+  * Get current schema and check if it is a 3DCityDB schema
+  ******************************************************************/
+  FUNCTION get_current_schema
+  RETURN VARCHAR2
+  AS
+    v_count  INTEGER;
+    v_schema VARCHAR2(128);
+  BEGIN
+    v_schema := SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA');
+
+    SELECT
+      COUNT(*) INTO v_count
+    FROM
+      user_tables
+    WHERE
+      table_name = 'DATABASE_SRS';
+
+    IF v_count > 0 THEN
+      RETURN v_schema;
+    ELSE
+      RETURN 'No 3DCityDB schema found for the current database user.';
+    END IF;
+  END get_current_schema;
+
+
+
+
+
+
+
+
+
+
+
+/*****************************************************************
 * TYPE STRARRAY
 *
 * global type for arrays of strings, e.g. used for log messages

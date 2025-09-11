@@ -1,20 +1,30 @@
 -----------------------------------------------------
 -- Author: Karin Patenge, Oracle
--- Last update: July 2025
+-- Last update: August 2025
 -- Status: work in progress
 -- This scripts requires Oracle Database version 23ai
 -----------------------------------------------------
 
-
-CREATE OR REPLACE PACKAGE citydb_pkg
+/*****************************************************************
+* PL/SQL PACKAGE citydb_delete
+*
+* Utility methods ...
+******************************************************************/
+CREATE OR REPLACE PACKAGE citydb_delete
 AS
   TYPE id_array IS TABLE OF NUMBER;
+  PROCEDURE set_current_schema (p_schema IN VARCHAR2);
   PROCEDURE cleanup_schema;
-  FUNCTION delete_feature ( ids IN id_array ) RETURN id_array ;
-END citydb_pkg;
+  PROCEDURE cleanup_schema (p_schema IN VARCHAR2);
+  FUNCTION delete_feature (p_ids IN id_array) RETURN id_array ;
+  FUNCTION delete_feature (p_ids IN id_array, p_schema IN VARCHAR2) RETURN id_array ;
+  FUNCTION delete_feature (p_id IN NUMBER) RETURN NUMBER ;
+  FUNCTION delete_feature (p_id IN NUMBER, p_schema IN VARCHAR2) RETURN NUMBER ;
+
+END citydb_delete;
 /
 
-CREATE OR REPLACE PACKAGE BODY citydb_pkg
+CREATE OR REPLACE PACKAGE BODY citydb_delete
 AS
 
   /******************************************************************
@@ -23,12 +33,22 @@ AS
   TYPE id_array IS TABLE OF NUMBER;
 
   /******************************************************************
+  * Set current schema
+  ******************************************************************/
+  PROCEDURE set_current_schema (
+    p_schema IN VARCHAR2
+  )
+  AS
+  BEGIN
+    EXECUTE IMMEDIATE 'ALTER SESSION SET CURRENT_SCHEMA = ' || DBMS_ASSERT.SCHEMA_NAME(p_schema);
+  END set_current_schema;
+
+  /******************************************************************
   * Truncate all data tables
   ******************************************************************/
   PROCEDURE cleanup_schema
   AS
   BEGIN
-    -- SELECT sys_context( 'userenv', 'current_schema' ) INTO schema_name;
     FOR cur IN (
       SELECT
         table_name
@@ -36,7 +56,7 @@ AS
         user_tables
       WHERE
         table_name NOT IN (
-          'ADE',
+          -- 'ADE',   /* ToDo: Check if should be included in this list */
           'DATATYPE',
           'DATABASE_SRS',
           'CODELIST',
@@ -46,150 +66,147 @@ AS
         )
     )
     LOOP
-      EXECUTE IMMEDIATE ('TRUNCATE TABLE ' || cur.table_name || ' CASCADE');
+      EXECUTE IMMEDIATE ('TRUNCATE TABLE ' || cur.table_name || ' CASCADE DROP STORAGE');
     END LOOP;
 
-    -- Reset identity column of table ADE
+    -- Reset identity columns of data tables
+    /* ToDo: Check the list of tables */
     EXECUTE IMMEDIATE ('ALTER TABLE ade MODIFY ( ID GENERATED AS IDENTITY (START WITH 1))');
-  END;
+    EXECUTE IMMEDIATE ('ALTER TABLE address MODIFY ( ID GENERATED AS IDENTITY (START WITH 1))');
+    EXECUTE IMMEDIATE ('ALTER TABLE feature MODIFY ( ID GENERATED AS IDENTITY (START WITH 1))');
+    EXECUTE IMMEDIATE ('ALTER TABLE property MODIFY ( ID GENERATED AS IDENTITY (START WITH 1))');
+    EXECUTE IMMEDIATE ('ALTER TABLE geometry_data MODIFY ( ID GENERATED AS IDENTITY (START WITH 1))');
+    EXECUTE IMMEDIATE ('ALTER TABLE implicit_geometry MODIFY ( ID GENERATED AS IDENTITY (START WITH 1))');
+    EXECUTE IMMEDIATE ('ALTER TABLE tex_image MODIFY ( ID GENERATED AS IDENTITY (START WITH 1))');
+    EXECUTE IMMEDIATE ('ALTER TABLE appearance MODIFY ( ID GENERATED AS IDENTITY (START WITH 1))');
+    EXECUTE IMMEDIATE ('ALTER TABLE surface_data MODIFY ( ID GENERATED AS IDENTITY (START WITH 1))');
+    EXECUTE IMMEDIATE ('ALTER TABLE appear_to_surface_data MODIFY ( ID GENERATED AS IDENTITY (START WITH 1))');
+    EXECUTE IMMEDIATE ('ALTER TABLE surface_data MODIFY ( ID GENERATED AS IDENTITY (START WITH 1))');
+  END cleanup_schema;
 
+  /******************************************************************
+  * Truncates all data tables in the given schema
+  ******************************************************************/
+  PROCEDURE cleanup_schema (
+    p_schema IN VARCHAR2
+  )
+  AS
+  BEGIN
+    citydb_delete.set_current_schema(p_schema);
+    citydb_delete.cleanup_schema;
+  END cleanup_schema;
 
   /******************************************************************
   * Delete from FEATURE table based on an ID array
   ******************************************************************/
-  FUNCTION delete_feature ( ids IN id_array )
-  RETURN id_array
+  FUNCTION delete_feature (
+    p_ids IN id_array
+  ) RETURN id_array
   IS
-    deleted_ids id_array := id_array();
+    v_deleted_ids id_array := id_array();  -- output collection
   BEGIN
 
-    citydb_pkg.delete_property_row (ids);
+    /* ToDo: Not needed due to existing FOREIGN KEY constraints with ON DELETE CASCADE */
+    -- citydb_delete.delete_property_row (ids);
 
-    FORALL i IN 1..ids.count
-    LOOP
-      DELETE FROM property
-      WHERE id = ids(i);
-      deleted_ids.extend(1);
-      deleted_ids(i) := ids(i);
-    END LOOP;
+    -- Get the IDs that actually exist in the table (for returning)
+    SELECT id BULK COLLECT INTO v_deleted_ids
+    FROM feature
+    WHERE id IN (SELECT COLUMN_VALUE FROM TABLE(p_ids));
+
+    -- Perform the bulk delete
+    DELETE FROM feature
+    WHERE id IN (SELECT COLUMN_VALUE FROM TABLE(p_ids));
     COMMIT;
-    RETURN deleted_ids;
-  END;
 
-  */
-
-  /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_feature(pid_array bigint[]) RETURNS SETOF BIGINT AS
-  $body$
-  DECLARE
-    deleted_ids bigint[] := '{}';
-  BEGIN
-    PERFORM
-      citydb_pkg.delete_property_row(array_agg(p.id))
-    FROM
-      property p,
-      unnest($1) AS a(a_id)
-    WHERE
-      p.feature_id = a.a_id;
-
-    PERFORM
-      citydb_pkg.delete_property(array_agg(p.id))
-    FROM
-      property p,
-      unnest($1) AS a(a_id)
-    WHERE
-      p.val_feature_id = a.a_id;
-
-    WITH delete_objects AS (
-      DELETE FROM
-        feature f
-      USING
-        unnest($1) AS a(a_id)
-      WHERE
-        f.id = a.a_id
-      RETURNING
-        id
-    )
-    SELECT
-      array_agg(id)
-    INTO
-      deleted_ids
-    FROM
-      delete_objects;
-
-    RETURN QUERY
-      SELECT unnest(deleted_ids);
-  END;
-  $body$
-  LANGUAGE plpgsql STRICT;
-  */
-
+    RETURN v_deleted_ids;
 
   END delete_feature;
 
 
-/******************************************************************
-* delete from FEATURE table based on an id array and schema name
-******************************************************************/
-  CREATE FUNCTION delete_feature (
-  ) RETURN ...
+  /*******************************************************************
+  * delete from FEATURE table based on an id array and the schema name
+  ********************************************************************/
+  FUNCTION delete_feature (
+    p_ids        IN id_array,
+    p_schema     IN VARCHAR2
+  ) RETURN id_array
   IS
+    v_deleted_ids id_array := id_array();  -- output collection
+    sql_select    VARCHAR2(1000);
+    sql_delete    VARCHAR2(1000);
   BEGIN
 
-  /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_feature(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
-  $body$
-  BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
-    RETURN QUERY
-      SELECT citydb_pkg.delete_feature($1);
-  END;
-  $body$
-  LANGUAGE plpgsql STRICT;
+    -- Prepare dynamic SQL with schema name for SELECT
+    sql_select := 'SELECT id FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id IN (SELECT COLUMN_VALUE FROM TABLE(:1))';
+    EXECUTE IMMEDIATE sql_select BULK COLLECT INTO v_deleted_ids USING p_ids;
 
-  */
+    -- Prepare dynamic SQL with schema name for DELETE
+    sql_delete := 'DELETE FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id IN (SELECT COLUMN_VALUE FROM TABLE(:1))';
+    EXECUTE IMMEDIATE sql_delete USING p_ids;
+
+    RETURN v_deleted_ids;
 
   END delete_feature;
 
   /******************************************************************
   * delete from FEATURE table based on an id
   ******************************************************************/
-  CREATE FUNCTION delete_feature (
-  ) RETURN ...
+  FUNCTION delete_feature (
+    p_id IN NUMBER
+  ) RETURN NUMBER
   IS
+    v_deleted_id  NUMBER;
   BEGIN
 
-  /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_feature(pid bigint) RETURNS BIGINT AS
-  $body$
-  BEGIN
-    RETURN citydb_pkg.delete_feature(ARRAY[pid]);
-  END;
-  $body$
-  LANGUAGE plpgsql STRICT;
+    -- Check if the ID exists
+    BEGIN
+      SELECT id INTO v_deleted_id
+      FROM feature
+      WHERE id = p_id;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RETURN NULL; -- ID not found
+    END;
 
-  */
+    -- Delete the row
+    DELETE FROM feature
+    WHERE id = p_id;
+    COMMIT;
+
+    RETURN v_deleted_id;
 
   END delete_feature;
 
   /******************************************************************
-  * delete from FEATURE table based on an id and schema name
+  * delete from FEATURE table based on an id and the schema name
   ******************************************************************/
   CREATE FUNCTION delete_feature (
-  ) RETURN ...
+    p_id      IN NUMBER,
+    p_schema  IN VARCHAR2
+  ) RETURN NUMBER
   IS
+    v_deleted_id NUMBER;
+    sql_select   VARCHAR2(1000);
+    sql_delete   VARCHAR2(1000);
   BEGIN
 
-  /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_feature(pid bigint, schema_name TEXT) RETURNS BIGINT AS
-  $body$
-  BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
-    RETURN citydb_pkg.delete_feature(ARRAY[pid]);
-  END;
-  $body$
-  LANGUAGE plpgsql STRICT;
-  */
+    -- Prepare and execute dynamic SQL for selecting the ID
+    sql_select := 'SELECT id FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id = :1';
+
+    BEGIN
+      EXECUTE IMMEDIATE sql_select INTO v_deleted_id USING p_id;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RETURN NULL; -- ID not found, nothing deleted
+    END;
+
+    -- Prepare and execute dynamic SQL for deleting the ID
+    sql_delete := 'DELETE FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id = :1';
+
+    EXECUTE IMMEDIATE sql_delete USING p_id;
+
+    RETURN v_deleted_id;
 
   END delete_feature;
 
@@ -198,12 +215,13 @@ AS
   * delete single row from PROPERTY table based on an id array
   ******************************************************************/
   CREATE FUNCTION delete_property_row (
-  ) RETURN ...
+    p_ids IN id_array
+  ) RETURN id_array
   IS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_property_row(pid_array bigint[]) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_property_row(pid_array bigint[]) RETURNS SETOF BIGINT AS
   $body$
   DECLARE
     deleted_ids bigint[] := '{}';
@@ -250,7 +268,7 @@ AS
 
     IF -1 = ALL(feature_ids) IS NOT NULL THEN
       PERFORM
-        citydb_pkg.delete_feature(array_agg(a.a_id))
+        citydb_delete.delete_feature(array_agg(a.a_id))
       FROM
         (SELECT DISTINCT unnest(feature_ids) AS a_id) a
       LEFT JOIN
@@ -261,14 +279,14 @@ AS
 
     IF -1 = ALL(geometry_ids) IS NOT NULL THEN
       PERFORM
-        citydb_pkg.delete_geometry_data(array_agg(a.a_id))
+        citydb_delete.delete_geometry_data(array_agg(a.a_id))
       FROM
         (SELECT DISTINCT unnest(geometry_ids) AS a_id) a;
     END IF;
 
     IF -1 = ALL(implicit_geometry_ids) IS NOT NULL THEN
       PERFORM
-        citydb_pkg.delete_implicit_geometry(array_agg(a.a_id))
+        citydb_delete.delete_implicit_geometry(array_agg(a.a_id))
       FROM
         (SELECT DISTINCT unnest(implicit_geometry_ids) AS a_id) a
       LEFT JOIN
@@ -279,14 +297,14 @@ AS
 
     IF -1 = ALL(appearance_ids) IS NOT NULL THEN
       PERFORM
-        citydb_pkg.delete_appearance(array_agg(a.a_id))
+        citydb_delete.delete_appearance(array_agg(a.a_id))
       FROM
         (SELECT DISTINCT unnest(appearance_ids) AS a_id) a;
     END IF;
 
     IF -1 = ALL(address_ids) IS NOT NULL THEN
       PERFORM
-        citydb_pkg.delete_address(array_agg(a.a_id))
+        citydb_delete.delete_address(array_agg(a.a_id))
       FROM
         (SELECT DISTINCT unnest(address_ids) AS a_id) a;
     END IF;
@@ -305,12 +323,13 @@ AS
   * delete from PROPERTY table based on an id array
   ******************************************************************/
   CREATE FUNCTION delete_property (
+    ids 
   ) RETURN ...
   IS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_property(pid_array bigint[]) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_property(pid_array bigint[]) RETURNS SETOF BIGINT AS
   $body$
   DECLARE
     cascade_delete_ids bigint[] := '{}';
@@ -318,7 +337,7 @@ AS
   BEGIN
     WITH parent_refs AS (
       SELECT
-        c.id, citydb_pkg.delete_property(p.id)
+        c.id, citydb_delete.delete_property(p.id)
       FROM
         property c
       INNER JOIN unnest($1) AS a(a_id) ON c.id = a.a_id
@@ -358,7 +377,7 @@ AS
       child_refs;
 
     RETURN QUERY
-      SELECT citydb_pkg.delete_property_row(property_ids)
+      SELECT citydb_delete.delete_property_row(property_ids)
       INTERSECT
       SELECT unnest($1)
       UNION
@@ -380,12 +399,12 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_property(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_property(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
+    PERFORM citydb_delete.set_current_schema(schema_name);
     RETURN QUERY
-      SELECT citydb_pkg.delete_property($1);
+      SELECT citydb_delete.delete_property($1);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -403,10 +422,10 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_property(pid bigint) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_property(pid bigint) RETURNS BIGINT AS
   $body$
   BEGIN
-    RETURN citydb_pkg.delete_property(ARRAY[pid]);
+    RETURN citydb_delete.delete_property(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -424,11 +443,11 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_property(pid bigint, schema_name TEXT) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_property(pid bigint, schema_name TEXT) RETURNS BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
-    RETURN citydb_pkg.delete_property(ARRAY[pid]);
+    PERFORM citydb_delete.set_current_schema(schema_name);
+    RETURN citydb_delete.delete_property(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -446,7 +465,7 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_geometry_data(pid_array bigint[]) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_geometry_data(pid_array bigint[]) RETURNS SETOF BIGINT AS
   $body$
   DECLARE
     deleted_ids bigint[] := '{}';
@@ -487,12 +506,12 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_geometry_data(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_geometry_data(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
+    PERFORM citydb_delete.set_current_schema(schema_name);
     RETURN QUERY
-      SELECT citydb_pkg.delete_geometry_data($1);
+      SELECT citydb_delete.delete_geometry_data($1);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -511,10 +530,10 @@ AS
 
   /*
 
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_geometry_data(pid bigint) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_geometry_data(pid bigint) RETURNS BIGINT AS
   $body$
   BEGIN
-    RETURN citydb_pkg.delete_geometry_data(ARRAY[pid]);
+    RETURN citydb_delete.delete_geometry_data(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -532,11 +551,11 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_geometry_data(pid bigint, schema_name TEXT) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_geometry_data(pid bigint, schema_name TEXT) RETURNS BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
-    RETURN citydb_pkg.delete_geometry_data(ARRAY[pid]);
+    PERFORM citydb_delete.set_current_schema(schema_name);
+    RETURN citydb_delete.delete_geometry_data(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -553,14 +572,14 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_implicit_geometry(pid_array bigint[]) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_implicit_geometry(pid_array bigint[]) RETURNS SETOF BIGINT AS
   $body$
   DECLARE
     deleted_ids bigint[] := '{}';
     relative_geometry_ids bigint[] := '{}';
   BEGIN
     PERFORM
-      citydb_pkg.delete_appearance(array_agg(t.id))
+      citydb_delete.delete_appearance(array_agg(t.id))
     FROM
       appearance t,
       unnest($1) AS a(a_id)
@@ -589,7 +608,7 @@ AS
 
     IF -1 = ALL(relative_geometry_ids) IS NOT NULL THEN
       PERFORM
-        citydb_pkg.delete_geometry_data(array_agg(a.a_id))
+        citydb_delete.delete_geometry_data(array_agg(a.a_id))
       FROM
         (SELECT DISTINCT unnest(relative_geometry_ids) AS a_id) a;
     END IF;
@@ -613,12 +632,12 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_implicit_geometry(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_implicit_geometry(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
+    PERFORM citydb_delete.set_current_schema(schema_name);
     RETURN QUERY
-      SELECT citydb_pkg.delete_implicit_geometry($1);
+      SELECT citydb_delete.delete_implicit_geometry($1);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -636,10 +655,10 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_implicit_geometry(pid bigint) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_implicit_geometry(pid bigint) RETURNS BIGINT AS
   $body$
   BEGIN
-    RETURN citydb_pkg.delete_implicit_geometry(ARRAY[pid]);
+    RETURN citydb_delete.delete_implicit_geometry(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -657,11 +676,11 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_implicit_geometry(pid bigint, schema_name TEXT) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_implicit_geometry(pid bigint, schema_name TEXT) RETURNS BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
-    RETURN citydb_pkg.delete_implicit_geometry(ARRAY[pid]);
+    PERFORM citydb_delete.set_current_schema(schema_name);
+    RETURN citydb_delete.delete_implicit_geometry(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -679,7 +698,7 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_appearance(pid_array bigint[]) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_appearance(pid_array bigint[]) RETURNS SETOF BIGINT AS
   $body$
   DECLARE
     deleted_ids bigint[] := '{}';
@@ -704,7 +723,7 @@ AS
 
     IF -1 = ALL(surface_data_ids) IS NOT NULL THEN
       PERFORM
-        citydb_pkg.delete_surface_data(array_agg(a.a_id))
+        citydb_delete.delete_surface_data(array_agg(a.a_id))
       FROM
         (SELECT DISTINCT unnest(surface_data_ids) AS a_id) a
       LEFT JOIN
@@ -749,12 +768,12 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_appearance(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_appearance(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
+    PERFORM citydb_delete.set_current_schema(schema_name);
     RETURN QUERY
-      SELECT citydb_pkg.delete_appearance($1);
+      SELECT citydb_delete.delete_appearance($1);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -772,10 +791,10 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_appearance(pid bigint) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_appearance(pid bigint) RETURNS BIGINT AS
   $body$
   BEGIN
-    RETURN citydb_pkg.delete_appearance(ARRAY[pid]);
+    RETURN citydb_delete.delete_appearance(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -793,11 +812,11 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_appearance(pid bigint, schema_name TEXT) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_appearance(pid bigint, schema_name TEXT) RETURNS BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
-    RETURN citydb_pkg.delete_appearance(ARRAY[pid]);
+    PERFORM citydb_delete.set_current_schema(schema_name);
+    RETURN citydb_delete.delete_appearance(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -815,7 +834,7 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_surface_data(pid_array bigint[]) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_surface_data(pid_array bigint[]) RETURNS SETOF BIGINT AS
   $body$
   DECLARE
     deleted_ids bigint[] := '{}';
@@ -843,7 +862,7 @@ AS
 
     IF -1 = ALL(tex_image_ids) IS NOT NULL THEN
       PERFORM
-        citydb_pkg.delete_tex_image(array_agg(a.a_id))
+        citydb_delete.delete_tex_image(array_agg(a.a_id))
       FROM
         (SELECT DISTINCT unnest(tex_image_ids) AS a_id) a
       LEFT JOIN
@@ -871,12 +890,12 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_surface_data(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_surface_data(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
+    PERFORM citydb_delete.set_current_schema(schema_name);
     RETURN QUERY
-      SELECT citydb_pkg.delete_surface_data($1);
+      SELECT citydb_delete.delete_surface_data($1);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -894,10 +913,10 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_surface_data(pid bigint) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_surface_data(pid bigint) RETURNS BIGINT AS
   $body$
   BEGIN
-    RETURN citydb_pkg.delete_surface_data(ARRAY[pid]);
+    RETURN citydb_delete.delete_surface_data(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -915,11 +934,11 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_surface_data(pid bigint, schema_name TEXT) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_surface_data(pid bigint, schema_name TEXT) RETURNS BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
-    RETURN citydb_pkg.delete_surface_data(ARRAY[pid]);
+    PERFORM citydb_delete.set_current_schema(schema_name);
+    RETURN citydb_delete.delete_surface_data(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -937,7 +956,7 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_tex_image(pid_array bigint[]) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_tex_image(pid_array bigint[]) RETURNS SETOF BIGINT AS
   $body$
   DECLARE
     deleted_ids bigint[] := '{}';
@@ -977,12 +996,12 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_tex_image(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_tex_image(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
+    PERFORM citydb_delete.set_current_schema(schema_name);
     RETURN QUERY
-      SELECT citydb_pkg.delete_tex_image($1);
+      SELECT citydb_delete.delete_tex_image($1);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -999,10 +1018,10 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_tex_image(pid bigint) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_tex_image(pid bigint) RETURNS BIGINT AS
   $body$
   BEGIN
-    RETURN citydb_pkg.delete_tex_image(ARRAY[pid]);
+    RETURN citydb_delete.delete_tex_image(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -1020,11 +1039,11 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_tex_image(pid bigint, schema_name TEXT) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_tex_image(pid bigint, schema_name TEXT) RETURNS BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
-    RETURN citydb_pkg.delete_tex_image(ARRAY[pid]);
+    PERFORM citydb_delete.set_current_schema(schema_name);
+    RETURN citydb_delete.delete_tex_image(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -1042,7 +1061,7 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_address(pid_array bigint[]) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_address(pid_array bigint[]) RETURNS SETOF BIGINT AS
   $body$
   DECLARE
     deleted_ids bigint[] := '{}';
@@ -1083,12 +1102,12 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_address(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_address(pid_array bigint[], schema_name TEXT) RETURNS SETOF BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
+    PERFORM citydb_delete.set_current_schema(schema_name);
     RETURN QUERY
-      SELECT citydb_pkg.delete_address($1);
+      SELECT citydb_delete.delete_address($1);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -1106,10 +1125,10 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_address(pid bigint) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_address(pid bigint) RETURNS BIGINT AS
   $body$
   BEGIN
-    RETURN citydb_pkg.del_address(ARRAY[pid]);
+    RETURN citydb_delete.del_address(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -1127,11 +1146,11 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.delete_address(pid bigint, schema_name TEXT) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.delete_address(pid bigint, schema_name TEXT) RETURNS BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
-    RETURN citydb_pkg.del_address(ARRAY[pid]);
+    PERFORM citydb_delete.set_current_schema(schema_name);
+    RETURN citydb_delete.del_address(ARRAY[pid]);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -1149,7 +1168,7 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.terminate_feature(pid_array bigint[], metadata JSONB DEFAULT '{}', cascade BOOLEAN DEFAULT TRUE) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.terminate_feature(pid_array bigint[], metadata JSONB DEFAULT '{}', cascade BOOLEAN DEFAULT TRUE) RETURNS SETOF BIGINT AS
   $body$
   DECLARE
     terminated_ids bigint[] := '{}';
@@ -1191,7 +1210,7 @@ AS
 
       IF -1 = ALL(child_feature_ids) IS NOT NULL THEN
         PERFORM
-          citydb_pkg.terminate_feature(array_agg(a.a_id), metadata, cascade)
+          citydb_delete.terminate_feature(array_agg(a.a_id), metadata, cascade)
         FROM
           (SELECT DISTINCT unnest(child_feature_ids) AS a_id) a
         WHERE NOT EXISTS
@@ -1227,12 +1246,12 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.terminate_feature(pid_array bigint[], schema_name TEXT, metadata JSONB DEFAULT '{}', cascade BOOLEAN DEFAULT TRUE) RETURNS SETOF BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.terminate_feature(pid_array bigint[], schema_name TEXT, metadata JSONB DEFAULT '{}', cascade BOOLEAN DEFAULT TRUE) RETURNS SETOF BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
+    PERFORM citydb_delete.set_current_schema(schema_name);
     RETURN QUERY
-      SELECT citydb_pkg.terminate_feature(pid_array, metadata, cascade);
+      SELECT citydb_delete.terminate_feature(pid_array, metadata, cascade);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -1250,10 +1269,10 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.terminate_feature(pid bigint, metadata JSONB DEFAULT '{}', cascade BOOLEAN DEFAULT TRUE) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.terminate_feature(pid bigint, metadata JSONB DEFAULT '{}', cascade BOOLEAN DEFAULT TRUE) RETURNS BIGINT AS
   $body$
   BEGIN
-    RETURN citydb_pkg.terminate_feature(ARRAY[pid], metadata, cascade);
+    RETURN citydb_delete.terminate_feature(ARRAY[pid], metadata, cascade);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -1271,11 +1290,11 @@ AS
   BEGIN
 
   /*
-  CREATE OR REPLACE FUNCTION citydb_pkg.terminate_feature(pid bigint, schema_name TEXT, metadata JSONB DEFAULT '{}', cascade BOOLEAN DEFAULT TRUE) RETURNS BIGINT AS
+  CREATE OR REPLACE FUNCTION citydb_delete.terminate_feature(pid bigint, schema_name TEXT, metadata JSONB DEFAULT '{}', cascade BOOLEAN DEFAULT TRUE) RETURNS BIGINT AS
   $body$
   BEGIN
-    PERFORM citydb_pkg.set_current_schema(schema_name);
-    RETURN citydb_pkg.terminate_feature(ARRAY[pid], metadata, cascade);
+    PERFORM citydb_delete.set_current_schema(schema_name);
+    RETURN citydb_delete.terminate_feature(ARRAY[pid], metadata, cascade);
   END;
   $body$
   LANGUAGE plpgsql STRICT;
@@ -1284,6 +1303,6 @@ AS
 
   END terminate_feature;
 
-END citydb_pkg;
+END citydb_delete;
 /
 
