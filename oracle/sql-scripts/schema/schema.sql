@@ -1,6 +1,6 @@
 -----------------------------------------------------
 -- Author: Karin Patenge, Oracle
--- Last update: Aug 2025
+-- Last update: Sep 12, 2025
 -- Status: to be reviewed
 -- This scripts requires Oracle Database version 23ai
 -----------------------------------------------------
@@ -494,8 +494,3 @@ ALTER TABLE datatype ADD CONSTRAINT datatype_superclass_fk FOREIGN KEY ( superty
 ALTER TABLE datatype ADD CONSTRAINT datatype_ade_fk FOREIGN KEY ( ade_id ) REFERENCES ade ( id );
 ALTER TABLE datatype ADD CONSTRAINT datatype_namespace_fk FOREIGN KEY ( namespace_id ) REFERENCES namespace ( id ) ON DELETE CASCADE;
 
---
--- Create directories to load JSON documents from
---
-
-CREATE OR REPLACE DIRECTORY SCHEMA_MAPPING_DIR AS '3DCITYDB/schema-mapping';
