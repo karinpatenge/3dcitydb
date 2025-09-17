@@ -1,29 +1,36 @@
 -----------------------------------------------------
 -- Author: Karin Patenge, Oracle
--- Last update: August 2025
+-- Last update: September 2025
 -- Status: work in progress
 -- This scripts requires Oracle Database version 23ai
 -----------------------------------------------------
 
 /*****************************************************************
-* PL/SQL PACKAGE citydb_delete
-*
-* Utility methods ...
-******************************************************************/
+ * CONTENT: PL/SQL Package CITYDB_DELETE
+ *
+ * Methods to handle deletions
+ *****************************************************************/
+
+-- Package declaration
 CREATE OR REPLACE PACKAGE citydb_delete
 AS
+
   TYPE id_array IS TABLE OF NUMBER;
+
   PROCEDURE set_current_schema (p_schema IN VARCHAR2);
   PROCEDURE cleanup_schema;
   PROCEDURE cleanup_schema (p_schema IN VARCHAR2);
-  FUNCTION delete_feature (p_ids IN id_array) RETURN id_array ;
-  FUNCTION delete_feature (p_ids IN id_array, p_schema IN VARCHAR2) RETURN id_array ;
-  FUNCTION delete_feature (p_id IN NUMBER) RETURN NUMBER ;
-  FUNCTION delete_feature (p_id IN NUMBER, p_schema IN VARCHAR2) RETURN NUMBER ;
+
+  FUNCTION delete_feature (p_ids IN id_array) RETURN id_array;
+  FUNCTION delete_feature (p_ids IN id_array, p_schema IN VARCHAR2) RETURN id_array;
+  FUNCTION delete_feature (p_id IN NUMBER) RETURN NUMBER;
+  FUNCTION delete_feature (p_id IN NUMBER, p_schema IN VARCHAR2) RETURN NUMBER;
 
 END citydb_delete;
+-- End of package declaration
 /
 
+-- Package body definition
 CREATE OR REPLACE PACKAGE BODY citydb_delete
 AS
 
@@ -122,6 +129,7 @@ AS
     RETURN v_deleted_ids;
 
   END delete_feature;
+  -- End of function
 
 
   /*******************************************************************
@@ -133,21 +141,22 @@ AS
   ) RETURN id_array
   IS
     v_deleted_ids id_array := id_array();  -- output collection
-    sql_select    VARCHAR2(1000);
-    sql_delete    VARCHAR2(1000);
+    v_sql_select    VARCHAR2(1000);
+    v_sql_delete    VARCHAR2(1000);
   BEGIN
 
     -- Prepare dynamic SQL with schema name for SELECT
-    sql_select := 'SELECT id FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id IN (SELECT COLUMN_VALUE FROM TABLE(:1))';
-    EXECUTE IMMEDIATE sql_select BULK COLLECT INTO v_deleted_ids USING p_ids;
+    v_sql_select := 'SELECT id FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id IN (SELECT COLUMN_VALUE FROM TABLE(:1))';
+    EXECUTE IMMEDIATE v_sql_select BULK COLLECT INTO v_deleted_ids USING p_ids;
 
     -- Prepare dynamic SQL with schema name for DELETE
-    sql_delete := 'DELETE FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id IN (SELECT COLUMN_VALUE FROM TABLE(:1))';
-    EXECUTE IMMEDIATE sql_delete USING p_ids;
+    v_sql_delete := 'DELETE FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id IN (SELECT COLUMN_VALUE FROM TABLE(:1))';
+    EXECUTE IMMEDIATE v_sql_delete USING p_ids;
 
     RETURN v_deleted_ids;
 
   END delete_feature;
+  -- End of function
 
   /******************************************************************
   * delete from FEATURE table based on an id
@@ -177,6 +186,7 @@ AS
     RETURN v_deleted_id;
 
   END delete_feature;
+  -- End of function
 
   /******************************************************************
   * delete from FEATURE table based on an id and the schema name
@@ -187,29 +197,29 @@ AS
   ) RETURN NUMBER
   IS
     v_deleted_id NUMBER;
-    sql_select   VARCHAR2(1000);
-    sql_delete   VARCHAR2(1000);
+    v_sql_select   VARCHAR2(1000);
+    v_sql_delete   VARCHAR2(1000);
   BEGIN
 
     -- Prepare and execute dynamic SQL for selecting the ID
-    sql_select := 'SELECT id FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id = :1';
+    v_sql_select := 'SELECT id FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id = :1';
 
     BEGIN
-      EXECUTE IMMEDIATE sql_select INTO v_deleted_id USING p_id;
+      EXECUTE IMMEDIATE v_sql_select INTO v_deleted_id USING p_id;
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
         RETURN NULL; -- ID not found, nothing deleted
     END;
 
     -- Prepare and execute dynamic SQL for deleting the ID
-    sql_delete := 'DELETE FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id = :1';
+    v_sql_delete := 'DELETE FROM ' || DBMS_ASSERT.SCHEMA_NAME(p_schema) || '.feature WHERE id = :1';
 
-    EXECUTE IMMEDIATE sql_delete USING p_id;
+    EXECUTE IMMEDIATE v_sql_delete USING p_id;
 
     RETURN v_deleted_id;
 
   END delete_feature;
-
+  -- End of function
 
   /******************************************************************
   * delete single row from PROPERTY table based on an id array
@@ -318,6 +328,7 @@ AS
   */
 
   END delete_property_row;
+  -- End of function
 
   /******************************************************************
   * delete from PROPERTY table based on an id array
@@ -389,6 +400,7 @@ AS
   */
 
   END delete_property;
+  -- End of function
 
   /******************************************************************
   * delete from PROPERTY table based on an id array and schema name
@@ -412,6 +424,7 @@ AS
   */
 
   END delete_property;
+  -- End of function
 
   /******************************************************************
   * delete from PROPERTY table based on an id and schema name
@@ -433,6 +446,7 @@ AS
   */
 
   END delete_property;
+  -- End of function
 
   /******************************************************************
   * delete from PROPERTY table based on an id and schema name
@@ -455,6 +469,7 @@ AS
   */
 
   END delete_property;
+  -- End of function
 
   /******************************************************************
   * delete from GEOMETRY_DATA table based on an id array
@@ -496,6 +511,7 @@ AS
   */
 
   END delete_geometry_data;
+  -- End of function
 
   /******************************************************************
   * delete from GEOMETRY_DATA table based on an id array and schema name
@@ -519,6 +535,7 @@ AS
   */
 
   END delete_geometry_data;
+  -- End of function
 
   /******************************************************************
   * delete from GEOMETRY_DATA table based on an id and schema name
@@ -541,6 +558,7 @@ AS
   */
 
   END delete_geometry_data;
+  -- End of function
 
   /******************************************************************
   * delete from GEOMETRY_DATA table based on an id and schema name
@@ -562,6 +580,7 @@ AS
   */
 
   END delete_geometry_data;
+  -- End of function
 
   /******************************************************************
   * delete from IMPLICIT_GEOMETRY table based on an id array
@@ -622,6 +641,7 @@ AS
   */
 
   END delete_implicit_geometry;
+  -- End of function
 
   /******************************************************************
   * delete from IMPLICIT_GEOMETRY table based on an id array and schema name
@@ -645,6 +665,7 @@ AS
   */
 
   END delete_implicit_geometry;
+  -- End of function
 
   /******************************************************************
   * delete from IMPLICIT_GEOMETRY table based on an id and schema name
@@ -666,6 +687,7 @@ AS
   */
 
   END delete_implicit_geometry;
+  -- End of function
 
   /******************************************************************
   * delete from IMPLICIT_GEOMETRY table based on an id and schema name
@@ -688,6 +710,7 @@ AS
   */
 
   END delete_implicit_geometry;
+  -- End of function
 
   /******************************************************************
   * delete from APPEARANCE table based on an id array
@@ -758,6 +781,7 @@ AS
   */
 
   END delete_appearance;
+  -- End of function
 
   /******************************************************************
   * delete from APPEARANCE table based on an id array and schema name
@@ -781,6 +805,7 @@ AS
   */
 
   END delete_appearance;
+  -- End of function
 
   /******************************************************************
   * delete from APPEARANCE table based on an id and schema name
@@ -802,6 +827,7 @@ AS
   */
 
   END delete_appearance;
+  -- End of function
 
   /******************************************************************
   * delete from APPEARANCE table based on an id and schema name
@@ -824,6 +850,7 @@ AS
   */
 
   END delete_appearance;
+  -- End of function
 
   /******************************************************************
   * delete from SURFACE_DATA table based on an id array
@@ -880,6 +907,7 @@ AS
   */
 
   END delete_surface_data;
+  -- End of function
 
   /******************************************************************
   * delete from SURFACE_DATA table based on an id array and schema name
@@ -903,6 +931,7 @@ AS
   */
 
   END delete_surface_data;
+  -- End of function
 
   /******************************************************************
   * delete from SURFACE_DATA table based on an id and schema name
@@ -924,6 +953,7 @@ AS
   */
 
   END delete_surface_data;
+  -- End of function
 
   /******************************************************************
   * delete from SURFACE_DATA table based on an id and schema name
@@ -946,6 +976,7 @@ AS
   */
 
   END delete_surface_data;
+  -- End of function
 
   /******************************************************************
   * delete from TEX_IMAGE table based on an id array
@@ -986,6 +1017,7 @@ AS
   */
 
   END delete_tex_image;
+  -- End of function
 
   /******************************************************************
   * delete from TEX_IMAGE table based on an id array and schema name
@@ -1008,6 +1040,7 @@ AS
   */
 
   END delete_tex_image;
+  -- End of function
 
   /******************************************************************
   * delete from TEX_IMAGE table based on an id and schema name
@@ -1029,6 +1062,7 @@ AS
   */
 
   END delete_tex_image;
+  -- End of function
 
   /******************************************************************
   * delete from TEX_IMAGE table based on an id and schema name
@@ -1051,6 +1085,7 @@ AS
   */
 
   END delete_tex_image;
+  -- End of function
 
   /******************************************************************
   * delete from ADDRESS table based on an id array
@@ -1092,6 +1127,7 @@ AS
   */
 
   END delete_address;
+  -- End of function
 
   /******************************************************************
   * delete from ADDRESS table based on an id array and schema name
@@ -1115,6 +1151,7 @@ AS
   */
 
   END delete_address;
+  -- End of function
 
   /******************************************************************
   * delete from ADDRESS table based on an id and schema name
@@ -1136,6 +1173,7 @@ AS
   */
 
   END delete_address;
+  -- End of function
 
   /******************************************************************
   * delete from ADDRESS table based on an id and schema name
@@ -1158,6 +1196,7 @@ AS
   */
 
   END delete_address;
+  -- End of function
 
   /******************************************************************
   * terminate feature based on an id array
@@ -1236,6 +1275,7 @@ AS
   */
 
   END terminate_feature;
+  -- End of function
 
   /******************************************************************
   * terminate features based on an id array and schema name
@@ -1259,6 +1299,7 @@ AS
   */
 
   END terminate_feature;
+  -- End of function
 
   /******************************************************************
   * terminate a feature based on an id and schema name
@@ -1280,6 +1321,7 @@ AS
   */
 
   END terminate_feature;
+  -- End of function
 
 /******************************************************************
 * terminate a feature based on an id and schema name
@@ -1302,7 +1344,9 @@ AS
   */
 
   END terminate_feature;
+  -- End of function
 
 END citydb_delete;
+-- End of package body
 /
 
