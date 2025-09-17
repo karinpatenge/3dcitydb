@@ -5,6 +5,14 @@
 -- This scripts requires Oracle Database version 23ai
 -----------------------------------------------------
 
+-----------------------------------------------------
+-- Open tasks:
+--   1. Postprocessing
+--     a. Register SDO Metadata
+--     b. Create spatial indexes
+-----------------------------------------------------
+
+
 --
 -- Clean up 3DCityDB tables
 --
@@ -42,20 +50,20 @@ DROP TABLE IF EXISTS appear_to_surface_data CASCADE CONSTRAINTS PURGE;
 
 CREATE TABLE IF NOT EXISTS address (
   id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1) ANNOTATIONS (DESCRIPTION 'Each address has a unique ID as the primary key assigned.'),
-  objectid                      VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The OBJECTID column in the ADDRESS table is used to store a unique identifier for an address object.'),
-  identifier                    VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER column provides an optional identifier to uniquely distinguish the address across different systems and potentially multiple versions of the same real-world object.'),
+  objectid                      VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The OBJECTID column in the ADDRESS table is used to store a unique identifier for an address object.'),
+  identifier                    VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER column provides an optional identifier to uniquely distinguish the address across different systems and potentially multiple versions of the same real-world object.'),
   identifier_codespace          VARCHAR2(1000) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER_CODESPACE column indicates the authority responsible for maintaining the identifier.'),
-  street                        VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The STREET column holds the name of the street or road where the address is located.'),
-  house_number                  VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The HOUSE_NUMBER column stores the building or house number.'),
-  po_box                        VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The PO_BOX column stores the post office box number associated with the address, if applicable.'),
-  zip_code                      VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The ZIP_CODE column holds the postal or ZIP code, helping to define the location more precisely.'),
-  city                          VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The CITY column stores the name of the city or locality.'),
-  state                         VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The STATE column contains the name of the state, province, or region.'),
+  street                        VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The STREET column holds the name of the street or road where the address is located.'),
+  house_number                  VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The HOUSE_NUMBER column stores the building or house number.'),
+  po_box                        VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The PO_BOX column stores the post office box number associated with the address, if applicable.'),
+  zip_code                      VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The ZIP_CODE column holds the postal or ZIP code, helping to define the location more precisely.'),
+  city                          VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The CITY column stores the name of the city or locality.'),
+  state                         VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The STATE column contains the name of the state, province, or region.'),
   country                       VARCHAR2(2) ANNOTATIONS (DESCRIPTION 'The COUNTRY column stores the name of the country in which the address resides.'),
   free_text                     JSON ANNOTATIONS (DESCRIPTION 'The FREE_TEXT column allows the storage of address information as unstructured text. It can be used to supplement or replace the other structured fields.'),
   multi_point                   SDO_GEOMETRY ANNOTATIONS (DESCRIPTION 'The MULTI_POINT column stores the geolocation of an address as multi-point geometry, enabling efficient spatial queries and reverse location services.'),
-  content                       VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'If the original address information is more complex and needs to be preserved, the CONTENT column can be used to store the address data in its original format as a character blob.'),
-  content_mime_type             VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The CONTENT_MIME_TYPE column specifying the MIME type of CONTENT column.'),
+  content                       CLOB ANNOTATIONS (DESCRIPTION 'If the original address information is more complex and needs to be preserved, the CONTENT column can be used to store the address data in its original format as a character blob.'),
+  content_mime_type             VARCHAR2(1000) ANNOTATIONS (DESCRIPTION 'The CONTENT_MIME_TYPE column specifying the MIME type of CONTENT column.'),
   CONSTRAINT address_id_pk PRIMARY KEY ( id ) ENABLE
 ) ANNOTATIONS (
   MODULE 'Feature',
@@ -69,14 +77,14 @@ CREATE TABLE IF NOT EXISTS address (
 CREATE TABLE IF NOT EXISTS feature (
   id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1) ANNOTATIONS (DESCRIPTION 'Each feature has a unique ID as the primary key assigned.'),
   objectclass_id                NUMBER(38) ANNOTATIONS (DESCRIPTION 'The OBJECTCLASS_ID enforces the type of the feature, such as building, window, city furniture, or tree. It serves as a foreign key to the OBJECTCLASS table, which lists all feature types supported by the 3DCityDB instance.'),
-  objectid                      VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The OBJECTID column is a string identifier used to uniquely reference a feature within the database and datasets.'),
-  identifier                    VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER column provides an optional identifier to uniquely distinguish the feature across different systems and potentially multiple versions of the same real-world object.'),
+  objectid                      VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The OBJECTID column is a string identifier used to uniquely reference a feature within the database and datasets.'),
+  identifier                    VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER column provides an optional identifier to uniquely distinguish the feature across different systems and potentially multiple versions of the same real-world object.'),
   identifier_codespace          VARCHAR2(1000) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER_CODESPACE column indicates the authority responsible for maintaining the identifier.'),
   envelope                      SDO_GEOMETRY ANNOTATIONS (DESCRIPTION 'The spatial ENVELOPE column stores the minimal 3D rectangle that encloses the features. It can be used for efficient spatial queries of features.'),
   last_modification_date        TIMESTAMP WITH TIME ZONE ANNOTATIONS (DESCRIPTION 'The column LAST_MODIFICATION_DATE is specific to 3DCityDB and are not defined in CityGML. It stores the update history.'),
-  updating_person               VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The column UPDATING_PERSON is specific to 3DCityDB and are not defined in CityGML. It stores the person responsible for a change.'),
+  updating_person               VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The column UPDATING_PERSON is specific to 3DCityDB and are not defined in CityGML. It stores the person responsible for a change.'),
   reason_for_update             VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The column REASON_FOR_UPDATE is specific to 3DCityDB and are not defined in CityGML. It specifies the reason for a change.'),
-  lineage                       VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The column LINEAGE is specific to 3DCityDB and are not defined in CityGML. It specifies the origin of a feature.'),
+  lineage                       VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The column LINEAGE is specific to 3DCityDB and are not defined in CityGML. It specifies the origin of a feature.'),
   creation_date                 TIMESTAMP WITH TIME ZONE ANNOTATIONS (DESCRIPTION 'The CREATION_DATE refers to database time, indicating when the feature was inserted in the database.'),
   termination_date              TIMESTAMP WITH TIME ZONE ANNOTATIONS (DESCRIPTION 'The TERMINATION_DATE refers to database time, indicating when the feature was terminated in the database.'),
   valid_from                    TIMESTAMP WITH TIME ZONE ANNOTATIONS (DESCRIPTION 'The column VALID_FROM defines when the lifespan of a feature started.'),
@@ -87,11 +95,13 @@ CREATE TABLE IF NOT EXISTS feature (
   DESCRIPTION 'The FEATURE table is the central table in the 3DCityDB v5 relational schema. It serves as the primary storage for all city objects and uniquely identifiable entities such as buildings, roads, or vegetation objects within your city model.'
 );
 
+-- Register SDO Metadata (Postprocessing)
+
 -- INSERT INTO USER_SDO_GEOM_METADATA ( ... );
 
 -- Create indices
 
--- CREATE INDEX feature_envelope_sdx ON feature ( envelope ) INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2;
+-- CREATE INDEX feature_envelope_sdx ON feature ( envelope ) INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2; -- Postprocessing
 CREATE INDEX feature_objectclass_idx ON feature ( objectclass_id );
 CREATE INDEX feature_objectid_idx ON feature ( objectid );
 CREATE INDEX feature_identifier_idx ON feature ( identifier, identifier_codespace );
@@ -114,16 +124,16 @@ CREATE TABLE IF NOT EXISTS property (
   parent_id                     NUMBER(38) ANNOTATIONS (DESCRIPTION 'When complex types cannot be captured in a single row, they are instead represented hierarchically within the PROPERTY table. Nested attributes reference their parent attribute through the PARENT_ID foreign key, which links to the id primary key of the parent property.'),
   datatype_id                   NUMBER(38) ANNOTATIONS (DESCRIPTION 'The DATATYPE_ID column enforces the data type of the property and uses a type definition in the DATATYPE table.'),
   namespace_id                  NUMBER(38) ANNOTATIONS (DESCRIPTION 'The NAMESPACE_ID is a foreign key referencing a namespace from the NAMESPACE table.'),
-  name                          VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The NAME column store the name of a property.'),
+  name                          VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The NAME column store the name of a property.'),
   val_int                       NUMBER(38) ANNOTATIONS (DESCRIPTION 'The value of an integer type property is stored in the VAL_INT column.'),
   val_double                    NUMBER(38,3) ANNOTATIONS (DESCRIPTION 'The value of a double type property is stored in the VAL_DOUBLE column.'),
   val_string                    VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The value of a string type property is stored in the VAL_STRING column.'),
   val_timestamp                 TIMESTAMP WITH TIME ZONE ANNOTATIONS (DESCRIPTION 'The value of a timestamp type property is stored in the VAL_TIMESTAMP column.'),
   val_uri                       VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The value of an uri type property is stored in the VAL_URI column.', LONG_FORM 'URI = Uniform Resource Identifier'),
-  val_codespace                 VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The value of a codespace type property is stored in the VAL_CODESPACE column.'),
+  val_codespace                 VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The value of a codespace type property is stored in the VAL_CODESPACE column.'),
   val_uom                       VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The value of an uom type property is stored in the VAL_UOM column.', LONG_FORM 'UoM = Unit of Measure'),
   val_array                     JSON ANNOTATIONS (DESCRIPTION 'The value of an array type property is stored in the VAL_ARRAY column. Array values of attributes are represented as JSON arrays. Items can either be simple values, JSON objects, or JSON arrays themselves.'),
-  val_lod                       VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The value of a lod type property is stored in the VAL_LOD column.', LONG_FORM 'Level of Detail'),
+  val_lod                       VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The value of a lod type property is stored in the VAL_LOD column.', LONG_FORM 'Level of Detail'),
   val_geometry_id               NUMBER(38) ANNOTATIONS (DESCRIPTION 'Geometries are linked to features through the VAL_GEOMETRY_ID column, which references the GEOMETRY_DATA table. '),
   val_implicitgeom_id           NUMBER(38) ANNOTATIONS (DESCRIPTION 'Implicit geometries are referenced via the VAL_IMPLICITGEOM_ID foreign key and are also stored in the GEOMETRY_DATA table.'),
   val_implicitgeom_refpoint     SDO_GEOMETRY ANNOTATIONS (DESCRIPTION 'The VAL_IMPLICITGEOM_REFPOINT column stores the reference point needed to define the implicit representation of a feature.'),
@@ -131,8 +141,8 @@ CREATE TABLE IF NOT EXISTS property (
   val_address_id                NUMBER(38) ANNOTATIONS (DESCRIPTION 'Address information is linked using the VAL_ADDRESS_ID foreign key, referencing the ADDRESS tables.'),
   val_feature_id                NUMBER(38) ANNOTATIONS (DESCRIPTION 'tbd'),
   val_relation_type             NUMBER(38) ANNOTATIONS (DESCRIPTION 'The VAL_RELATION_TYPE defines the type of the feature relationship as an integer.'),
-  val_content                   VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The VAL_CONTENT column can hold arbitrary content as a character blob.'),
-  val_content_mime_type         VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The VAL_CONTENT_MIME_TYPE column specifies the MIME type of the CONTENT column.'),
+  val_content                   CLOB ANNOTATIONS (DESCRIPTION 'The VAL_CONTENT column can hold arbitrary content as a character lob.'),
+  val_content_mime_type         VARCHAR2(1000) ANNOTATIONS (DESCRIPTION 'The VAL_CONTENT_MIME_TYPE column specifies the MIME type of the CONTENT column.'),
   CONSTRAINT property_id_pk PRIMARY KEY ( id ) ENABLE,
   CONSTRAINT property_val_relation_type_chk CHECK (val_relation_type IN (0, 1)) ENABLE
 ) ANNOTATIONS (
@@ -176,11 +186,13 @@ CREATE TABLE IF NOT EXISTS geometry_data (
   DESCRIPTION 'The GEOMETRY_DATA table serves as the central location for storing both explicit and implicit geometry data of the features in the 3DCityDB. It supports various geometry types, including points, lines, surface-based geometries, and volume geometries.'
 );
 
+-- Register SDO Metadata (Postprocessing)
+
 -- INSERT INTO USER_SDO_GEOM_METADATA ( ... )
 
 -- Create indices
 
--- CREATE INDEX geometry_data_sdx ON geometry_data ( geometry ) INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2;
+-- CREATE INDEX geometry_data_sdx ON geometry_data ( geometry ) INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2;  -- Postprocessing
 CREATE INDEX geometry_data_feature_idx ON geometry_data ( feature_id );
 
 --
@@ -189,10 +201,10 @@ CREATE INDEX geometry_data_feature_idx ON geometry_data ( feature_id );
 
 CREATE TABLE IF NOT EXISTS implicit_geometry (
   id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1) ANNOTATIONS (DESCRIPTION 'Each entry in the IMPLICIT_GEOMETRY table has a unique ID as the primary key assigned. An implicit geometry is a template that is stored only once in the 3DCityDB and can be reused by multiple city objects. Examples of implicit geometries include 3D tree models, where different tree species and heights are represented as template geometries.'),
-  objectid                      VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The OBJECTID column provides a unique identifier for the implicit geometry.'),
-  mime_type                     VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The MIME_TYPE column contains the MIME type of the binary 3D model or external file.'),
-  mime_type_codespace           VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The MIME_TYPE_CODESPACE column can store an optional code space for the MIME type, providing further context or classification.'),
-  reference_to_library          VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The REFERENCE_TO_LIBRARY column is used if the 3D model is referenced through a URI, pointing to an external file or system.'),
+  objectid                      VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The OBJECTID column provides a unique identifier for the implicit geometry.'),
+  mime_type                     VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The MIME_TYPE column contains the MIME type of the binary 3D model or external file.'),
+  mime_type_codespace           VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The MIME_TYPE_CODESPACE column can store an optional code space for the MIME type, providing further context or classification.'),
+  reference_to_library          VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The REFERENCE_TO_LIBRARY column is used if the 3D model is referenced through a URI, pointing to an external file or system.'),
   library_object                BLOB ANNOTATIONS (DESCRIPTION 'The LIBRARY_OBJECT column is used if the 3D model is stored as binary blob.'),
   relative_geometry_id          NUMBER(38) ANNOTATIONS (DESCRIPTION 'The RELATIVE_GEOMETRY_ID column is used if the 3D model is stored as geometries with local coordinates.'),
   CONSTRAINT implicit_geometry_id_pk PRIMARY KEY ( id ) ENABLE
@@ -214,7 +226,7 @@ CREATE TABLE IF NOT EXISTS tex_image (
   id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1) ANNOTATIONS (DESCRIPTION 'Each entry in the TEX_IMAGE table has a unique ID as the primary key assigned.'),
   image_uri                     VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The IMAGE_URI column can store the file name or original path of the texture image.'),
   image_data                    BLOB ANNOTATIONS (DESCRIPTION 'Texture images for both ParameterizedTexture and GeoreferencedTexture can be stored as binary blobs in the IMAGE_DATA column. If the image should not be stored directly in the database, the IMAGE_DATA column is set to NULL.'),
-  mime_type                     VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The MIME_TYPE column specifies the MIME type of the texture image, ensuring that the image can be processed correctly according to its format (e.g., image/png for a PNG image or image/jpeg for a JPEG image).'),
+  mime_type                     VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The MIME_TYPE column specifies the MIME type of the texture image, ensuring that the image can be processed correctly according to its format (e.g., image/png for a PNG image or image/jpeg for a JPEG image).'),
   mime_type_codespace           VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The MIME_TYPE_CODESPACE column can store an optional code space for the MIME type, providing further context or classification.'),
   CONSTRAINT tex_image_id_pk PRIMARY KEY ( id ) ENABLE
 ) ANNOTATIONS (
@@ -228,10 +240,10 @@ CREATE TABLE IF NOT EXISTS tex_image (
 
 CREATE TABLE IF NOT EXISTS appearance (
   id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY ANNOTATIONS (DESCRIPTION 'Each appearance has a unique ID as the primary key assigned.'),
-  objectid                      VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The OBJECTID column is an identifier and used to uniquely reference an appearance object within the database and datasets.'),
-  identifier                    VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER column provides an optional identifier to uniquely distinguish the appearance across different systems and potentially multiple versions.'),
+  objectid                      VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The OBJECTID column is an identifier and used to uniquely reference an appearance object within the database and datasets.'),
+  identifier                    VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER column provides an optional identifier to uniquely distinguish the appearance across different systems and potentially multiple versions.'),
   identifier_codespace          VARCHAR2(1000) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER_CODESPACE indicates the authority responsible for maintaining the identifier.'),
-  theme                         VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'Each appearance is associated with a specific theme for its surface data, stored as a string identifier in the THEME column.'),
+  theme                         VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'Each appearance is associated with a specific theme for its surface data, stored as a string identifier in the THEME column.'),
   is_global                     NUMBER(1) ANNOTATIONS (DESCRIPTION 'To designate an appearance as global, the IS_GLOBAL column should be set to 1 (true), and both FEATURE_ID and IMPLICIT_GEOMETRY_ID should be set to NULL.'),
   feature_id                    NUMBER(38) ANNOTATIONS (DESCRIPTION 'The APPEARANCE table includes a FEATURE_ID column, providing a back-link to the FEATURE table.'),
   implicit_geometry_id          NUMBER(38) ANNOTATIONS (DESCRIPTION ' Appearances can be linked to an implicit geometry, which acts as a template geometry for multiple features. In this case, the appearance references the template in the IMPLICIT_GEOMETRY table via the IMPLICIT_GEOMETRY_ID column.'),
@@ -252,22 +264,22 @@ CREATE INDEX appearance_implicit_geometry_idx ON appearance ( implicit_geometry_
 
 CREATE TABLE IF NOT EXISTS surface_data (
   id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1) ANNOTATIONS (DESCRIPTION 'Each entry in the SURFACE_DATA table has a unique ID as the primary key assigned.'),
-  objectid                      VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The OBJECTID column is an identifier and used to uniquely reference an surface data elements within the database and datasets.'),
-  identifier                    VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER column provides an optional identifier to uniquely distinguish the surface data elements across different systems and potentially multiple versions.'),
+  objectid                      VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The OBJECTID column is an identifier and used to uniquely reference an surface data elements within the database and datasets.'),
+  identifier                    VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER column provides an optional identifier to uniquely distinguish the surface data elements across different systems and potentially multiple versions.'),
   identifier_codespace          VARCHAR2(1000) ANNOTATIONS (DESCRIPTION 'The IDENTIFIER_CODESPACE indicates the authority responsible for maintaining the identifier.'),
   is_front                      NUMBER(1) ANNOTATIONS (DESCRIPTION 'The IS_FRONT column indicates whether the surface data should be applied to the front (is_front = 1) or back face (is_front = 0) of the target surface geometry.'),
   objectclass_id                NUMBER(38) NOT NULL ANNOTATIONS (DESCRIPTION 'The OBJECTCLASS_ID column enforces the type of surface data, acting as a foreign key to the OBJECTCLASS metadata table.'),
   x3d_shininess                 BINARY_DOUBLE ANNOTATIONS (DESCRIPTION 'The X3D_SHININESS column specifies the sharpness of the specular highlight (0..1).'),
   x3d_transparency              BINARY_DOUBLE ANNOTATIONS (DESCRIPTION 'The X3D_TRANSPARENCY column defines the transparency level of the material (0.0 = opaque, 1.0 = fully transparent).'),
   x3d_ambient_intensity         BINARY_DOUBLE ANNOTATIONS (DESCRIPTION 'The X3D_AMBIENT_INTENSITY column specifies the minimum percentage of diffuse color that is visible regardless of light sources (0..1).'),
-  x3d_specular_color            VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The X3D_SPECULAR_COLOR column sets the color of the specular reflection of the material in Hex format (#RRGGBB).'),
-  x3d_diffuse_color             VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The X3D_DIFFUSE_COLOR column defines the color of the material''s diffuse reflection in Hex format (#RRGGBB).'),
-  x3d_emissive_color            VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The X3D_EMISSIVE_COLOR column specifies the color of the material''s emission (self-illumination) in Hex format (#RRGGBB).'),
+  x3d_specular_color            VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The X3D_SPECULAR_COLOR column sets the color of the specular reflection of the material in Hex format (#RRGGBB).'),
+  x3d_diffuse_color             VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The X3D_DIFFUSE_COLOR column defines the color of the material''s diffuse reflection in Hex format (#RRGGBB).'),
+  x3d_emissive_color            VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The X3D_EMISSIVE_COLOR column specifies the color of the material''s emission (self-illumination) in Hex format (#RRGGBB).'),
   x3d_is_smooth                 NUMBER(1) ANNOTATIONS (DESCRIPTION 'The X3D_IS_SMOOTH column indicates whether the material is smooth (1) or faceted (0).'),
   tex_image_id                  NUMBER(38) ANNOTATIONS (DESCRIPTION 'The texture image is stored in the TEX_IMAGE table and linked through the TEX_IMAGE_ID foreign key, enabling multiple surface data to use the same texture image.'),
-  tex_texture_type              VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The TEX_IMAGE_TYPE defines the type of texture (specific, typical, unknown).'),
-  tex_wrap_mode                 VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The TEX_WRAP_MODE column specifies how textures are wrapped (none, wrap, mirror, clamp, border).'),
-  tex_border_color              VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The TEX_BORDER_COLOR column defines the border color for the texture in Hex format (#RRGGBBAA).'),
+  tex_texture_type              VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The TEX_IMAGE_TYPE defines the type of texture (specific, typical, unknown).'),
+  tex_wrap_mode                 VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The TEX_WRAP_MODE column specifies how textures are wrapped (none, wrap, mirror, clamp, border).'),
+  tex_border_color              VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The TEX_BORDER_COLOR column defines the border color for the texture in Hex format (#RRGGBBAA).'),
   gt_orientation                JSON ANNOTATIONS (DESCRIPTION 'The GT_ORIENTATION column specifies the rotation and scaling of a georeferenced texture image as a 2x2 matrix, stored as JSON array in row-major order.'),
   gt_reference_point            SDO_GEOMETRY ANNOTATIONS (DESCRIPTION 'The GT_REFERENCE_POINT column defines the 2D point representing the center of the upper left image pixel in real-world space.'),
   CONSTRAINT surface_data_id_pk PRIMARY KEY ( id ) ENABLE,
@@ -329,9 +341,9 @@ CREATE INDEX appear_to_surface_data_surface_data_idx ON appear_to_surface_data (
 
 CREATE TABLE IF NOT EXISTS codelist (
   id                            NUMBER(38) NOT NULL ANNOTATIONS (DESCRIPTION 'Each entry in the CODELIST table has a unique ID as the primary key assigned.'),
-  codelist_type                 VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The CODELIST_TYPE column specifies the CityGML data type associated with the codelist.'),
+  codelist_type                 VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The CODELIST_TYPE column specifies the CityGML data type associated with the codelist.'),
   url                           VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'Each codelist is assigned a URL as a unique identifier, which is stored in the url column.'),
-  mime_type                     VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'In case the url points to an existing external file, the MIME_TYPE column should specify the MIME type of the referenced codelist to ensure it can be processed correctly according to its format.'),
+  mime_type                     VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'In case the url points to an existing external file, the MIME_TYPE column should specify the MIME type of the referenced codelist to ensure it can be processed correctly according to its format.'),
   CONSTRAINT codelist_id_pk PRIMARY KEY ( id ) ENABLE
 ) ANNOTATIONS (
   MODULE 'Codelist',
@@ -349,8 +361,8 @@ CREATE INDEX codelist_codelist_type_idx ON codelist ( codelist_type );
 CREATE TABLE IF NOT EXISTS codelist_entry (
   id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1) ANNOTATIONS (DESCRIPTION 'Each entry in the CODELIST_ENTRY table has a unique ID as the primary key assigned.'),
 	codelist_id                   NUMBER(38) NOT NULL ANNOTATIONS (DESCRIPTION 'Each value is linked to a codelist through the CODELIST_ID foreign key, which references an entry in the CODELIST table.'),
-	code                          VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The code for each permissible codelist value is stored in the CODE column.'),
-	definition                    VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'The code definition or description is stored in the DEFINITION column.'),
+	code                          VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The code for each permissible codelist value is stored in the CODE column.'),
+	definition                    VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The code definition or description is stored in the DEFINITION column.'),
 	CONSTRAINT codelist_entry_id_pk PRIMARY KEY ( id ) ENABLE
 ) ANNOTATIONS (
   MODULE 'Codelist',
@@ -369,7 +381,7 @@ CREATE TABLE IF NOT EXISTS ade (
   id                            NUMBER(38) GENERATED ALWAYS AS IDENTITY (START WITH 1) ANNOTATIONS (DESCRIPTION 'Each entry in the ADE table has a unique ID as the primary key assigned.'),
   name                          VARCHAR2(1000) NOT NULL ANNOTATIONS (DESCRIPTION 'tbd'),
   description                   VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'tbd'),
-  version                       VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'tbd'),
+  version                       VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'tbd'),
   CONSTRAINT ade_id_pk PRIMARY KEY ( id ) ENABLE
 ) ANNOTATIONS (
   MODULE 'Metadata',
@@ -396,7 +408,7 @@ CREATE TABLE IF NOT EXISTS database_srs (
 
 CREATE TABLE IF NOT EXISTS namespace (
   id                            NUMBER(38) ANNOTATIONS (DESCRIPTION 'Each entry in the NAMESPACE table has a unique ID as the primary key assigned.'),
-  alias                         VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'Each namespace is associated with an ALIAS, which acts as a shortcut for the namespace and must be unique across all entries in the NAMESPACE table.'),
+  alias                         VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'Each namespace is associated with an ALIAS, which acts as a shortcut for the namespace and must be unique across all entries in the NAMESPACE table.'),
   namespace                     VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'The NAMESPACE column contains the namespace name.'),
   ade_id                        NUMBER(38) ANNOTATIONS (DESCRIPTION 'The list of namespaces in the NAMESPACE table is not exhaustive and can be extended with user-defined namespaces, typically from an ADE. In this case, the ade_id foreign key must reference the ADE registered in the ADE table that defines the namespace.'),
   CONSTRAINT namespace_id_pk PRIMARY KEY ( id ) ENABLE,
@@ -413,7 +425,7 @@ CREATE TABLE IF NOT EXISTS namespace (
 CREATE TABLE IF NOT EXISTS objectclass (
   id                            NUMBER(38) NOT NULL ANNOTATIONS (DESCRIPTION 'Each entry in the OBJECTCLASS table has a unique ID as the primary key assigned.'),
   superclass_id                 NUMBER(38) ANNOTATIONS (DESCRIPTION 'Type inheritance is represented by the superclass_id column, which serves as a foreign key linking a subtype to its supertype. Transitive inheritance is supported, allowing feature types to form hierarchical structures.'),
-  classname                     VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'Every feature type registered in the OBJECTCLASS table is uniquely identified by its name and namespace, which are stored in the CLASSNAME and NAMESPACE_ID columns.'),
+  classname                     VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'Every feature type registered in the OBJECTCLASS table is uniquely identified by its name and namespace, which are stored in the CLASSNAME and NAMESPACE_ID columns.'),
   is_abstract                   NUMBER(1) ANNOTATIONS (DESCRIPTION 'The flag IS_ABSTRACT determines whether the feature type is abstract based on the corresponding feature class definition in the CityGML 3.0 CM.'),
   is_toplevel                   NUMBER(1) ANNOTATIONS (DESCRIPTION 'The flag IS_TOPLEVEL determines whether the feature type is a top-level feature based on the corresponding feature class definition in the CityGML 3.0 CM.'),
   ade_id                        NUMBER(38) ANNOTATIONS (DESCRIPTION 'The ADE_ID foreign key must point to the ADE registered in the ADE table that defines the feature type.'),
@@ -438,7 +450,7 @@ CREATE INDEX objectclass_superclass_idx ON objectclass ( superclass_id );
 CREATE TABLE IF NOT EXISTS datatype (
   id                            NUMBER(38) NOT NULL ANNOTATIONS (DESCRIPTION 'Each entry in the DATATYPE table has a unique ID as the primary key assigned.'),
   supertype_id                  NUMBER(38) ANNOTATIONS (DESCRIPTION 'Type inheritance is represented by the SUPERTYPE_ID column, which serves as a foreign key linking a subtype to its supertype. Transitive inheritance is supported, allowing data types to form hierarchical structures.'),
-  typename                      VARCHAR2(256) ANNOTATIONS (DESCRIPTION 'Every data type registered in the DATATYPE table is uniquely identified by its name and namespace, which are stored in the TYPENAME and NAMESPACE_ID columns.'),
+  typename                      VARCHAR2(4000) ANNOTATIONS (DESCRIPTION 'Every data type registered in the DATATYPE table is uniquely identified by its name and namespace, which are stored in the TYPENAME and NAMESPACE_ID columns.'),
   is_abstract                   NUMBER(1) ANNOTATIONS (DESCRIPTION 'The flag is_abstract determines whether the data type is abstract, based on the corresponding definition in the CityGML 3.0 CM.'),
   ade_id                        NUMBER(38) ANNOTATIONS (DESCRIPTION 'Users can extend the DATATYPE table with custom data types, typically from an ADE. The ADE_ID foreign key must point to the ADE registered in the ADE table that defines the data type.'),
   namespace_id                  NUMBER(38) ANNOTATIONS (DESCRIPTION 'Every data type registered in the DATATYPE table is uniquely identified by its name and namespace, which are stored in the TYPENAME and NAMESPACE_ID columns. The namespace_id is a foreign key referencing a namespace from the NAMESPACE table.'),
