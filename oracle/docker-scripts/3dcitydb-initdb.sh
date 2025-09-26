@@ -1,41 +1,13 @@
 #!/usr/bin/env bash
 # 3DCityDB setup --------------------------------------------------------------
 
+# Print commands and their arguments as they are executed
+set -e;
+
 # Set 3DCityDB version --------------------------------------------------------
 if [ -z $CITYDB_VERSION ]; then
   # CITYDB_VERSION unset, read version from the version.txt file
   read -r CITYDB_VERSION < version.txt
-fi
-
-# Print commands and their arguments as they are executed
-set -e
-
-# ORACLE_PDB ------------------------------------------------------------------
-if [ -z ${ORACLE_PDB+x} ]; then
-  ORACLE_PDB="PDB1"
-else
-  ORACLE_PDB="$ORACLE_PDB"
-fi
-
-# DBHOST ----------------------------------------------------------------------
-if [ -z ${ORACLE_PDB+x} ]; then
-  DBHOST="localhost"
-else
-  DBHOST="$DBHOST"
-fi
-
-# DBPORT ----------------------------------------------------------------------
-if [ -z ${ORACLE_PDB+x} ]; then
-  DBPORT="1521"
-else
-  DBPORT="$DBPORT"
-fi
-
-# DBUSER ----------------------------------------------------------------------
-if [ -z ${DBUSER+x} ]; then
-  DBUSER="citydb"
-else
-  DBUSER="$DBUSER"
 fi
 
 # ORACLE_PWD ------------------------------------------------------------------
@@ -45,25 +17,11 @@ if [ -z ${ORACLE_PWD+x} ]; then
   exit
 fi
 
-# TABLESPACE ------------------------------------------------------------------
-if [ -z ${TABLESPACE+x} ]; then
-  TABLESPACE="users"
+# ORACLE_PDB ------------------------------------------------------------------
+if [ -z ${ORACLE_PDB+x} ]; then
+  ORACLE_PDB="ORCLPDB1"
 else
-  TABLESPACE="$TABLESPACE"
-fi
-
-# VERSIONING ------------------------------------------------------------------
-if [ -z ${VERSIONING+x} ]; then
-  VERSIONING="no"
-else
-  VERSIONING="$VERSIONING"
-fi
-
-# CHANGELOG -------------------------------------------------------------------
-if [ -z ${CHANGELOG+x} ]; then
-  CHANGELOG="no"
-else
-  CHANGELOG="$CHANGELOG"
+  ORACLE_PDB="$ORACLE_PDB"
 fi
 
 # SRID ------------------------------------------------------------------------
@@ -71,7 +29,7 @@ regex_numeric='^[0-9]+$'
 if [ -z ${SRID+x} ]; then
   # No SRID set -> give instructions on how to create a DB and do nothing
   echo
-  echo "SRID is not set. No 3DCityDB instance will be created in database '$ORACLE_DB'."
+  echo "SRID is not set. No 3DCityDB instance will be created."
   exit
 else
   # SRID given, check if valid
@@ -103,20 +61,59 @@ else
   fi
 fi
 
+# VERSIONING ------------------------------------------------------------------
+if [ -z ${VERSIONING+x} ]; then
+  VERSIONING="no"
+else
+  VERSIONING="$VERSIONING"
+fi
+
+# DBUSER ----------------------------------------------------------------------
+if [ -z ${DBUSER+x} ]; then
+  DBUSER="citydb"
+else
+  DBUSER="$DBUSER"
+fi
+
+# DBHOST ----------------------------------------------------------------------
+if [ -z ${ORACLE_PDB+x} ]; then
+  DBHOST="localhost"
+else
+  DBHOST="$DBHOST"
+fi
+
+# DBPORT ----------------------------------------------------------------------
+if [ -z ${ORACLE_PDB+x} ]; then
+  DBPORT="1521"
+else
+  DBPORT="$DBPORT"
+fi
+
+# TABLESPACE ------------------------------------------------------------------
+if [ -z ${TABLESPACE+x} ]; then
+  TABLESPACE="users"
+else
+  TABLESPACE="$TABLESPACE"
+fi
+
+# CHANGELOG -------------------------------------------------------------------
+if [ -z ${CHANGELOG+x} ]; then
+  CHANGELOG="no"
+else
+  CHANGELOG="$CHANGELOG"
+fi
+
 # Create user -----------------------------------------------------------------
 echo
 echo "Creating user $DBUSER ..."
-echo "CREATE USER IF NOT EXISTS $DBUSER identified by $ORACLE_PWD QUOTA UNLIMITED ON $TABLESPACE;
+echo "CREATE USER IF NOT EXISTS $DBUSER identified by $ORACLE_PWD;
+      ALTER USER $DBUSER QUOTA UNLIMITED ON $TABLESPACE;
       GRANT CONNECT, RESOURCE to $DBUSER;
       GRANT CREATE SESSION TO $DBUSER;
-      GRANT CREATE ANY DIRECTORY TO $DBUSER;
+      GRANT CREATE TRIGGER to $DBUSER;
       GRANT DB_DEVELOPER_ROLE TO $DBUSER;" | sqlplus system/"$ORACLE_PWD"@"$DBHOST":"$DBPORT"/"$ORACLE_PDB"
 echo "Creating user $DBUSER ... done!"
 echo
-
-# Create directory for schema mappings
-echo "CREATE OR REPLACE DIRECTORY schema_mapping_dir AS '/3DCITYDB/schema-mapping' ;
-      GRANT READ ON DIRECTORY schema_mapping_dir TO $DBUSER;" | sqlplus system/"$ORACLE_PWD"@"$DBHOST":"$DBPORT"/"$ORACLE_PDB"
 
 # Enable GeoRaster (required since Oracle 19c)
 echo "EXECUTE SDO_GEOR_ADMIN.ENABLEGEORASTER;" | sqlplus "$DBUSER"/"$ORACLE_PWD"@"$DBHOST":"$DBPORT"/"$ORACLE_PDB"
@@ -136,7 +133,6 @@ cat <<EOF
 # 3DCityDB Docker Oracle ######################################################
 #
 # Oracle Version --------------------------------------------------------------
-#
 #   Latest Oracle Database Enterprise Edition from Oracle Container Registry
 #   https://container-registry.oracle.com/database/enterprise:21.3.0.0
 #   !! 23ai not yet available !!
