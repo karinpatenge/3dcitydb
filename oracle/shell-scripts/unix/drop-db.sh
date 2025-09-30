@@ -46,7 +46,7 @@ echo
 
 echo "Connecting to \"$DBUSER@$DBHOST:$DBPORT/$ORACLE_PDB\" ..."
 echo -n "Enter password: "
-sqlplus -S -L "${DBUSER}@\"${DBHOST}:${DBPORT}/${ORACLE_PDB}\"" @DROP_DB.sql
+sqlplus -S -L "${DBUSER}@\"${DBHOST}:${DBPORT}/${ORACLE_PDB}\"" @drop-db.sql
 echo
 read -rsn1 -p 'Press ENTER to quit.'
 echo
