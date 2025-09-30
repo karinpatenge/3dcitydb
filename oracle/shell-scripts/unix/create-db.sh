@@ -44,7 +44,7 @@ echo
 echo '######################################################################################'
 
 # cd to path of the SQL scripts
-cd ../../SQLScripts
+cd ../../sql-scripts
 
 # Prompt for SRID -------------------------------------------------------------
 re='^[0-9]+$'
@@ -93,7 +93,7 @@ SRS_NAME=${var:-$SRS_NAME}
 echo
 echo "Connecting to \"$DBUSER@$DBHOST:$DBPORT/$ORACLE_PDB\" ..."
 echo -n "Enter password: "
-sqlplus -S -L "${DBUSER}@\"${DBHOST}:${DBPORT}/${ORACLE_PDB}\"" @CREATE_DB.sql "${SRID}" "${SRSNAME}"
+sqlplus -S -L "${DBUSER}@\"${DBHOST}:${DBPORT}/${ORACLE_PDB}\"" @create-db.sql "${SRID}" "${SRSNAME}"
 echo
 read -rsn1 -p 'Press ENTER to quit.'
 echo
