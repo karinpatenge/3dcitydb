@@ -89,48 +89,23 @@ echo 'Please enter the corresponding SRS name to be used in exports.'
 read -p "(default SRS_NAME=$SRS_NAME): " var
 SRS_NAME=${var:-$SRS_NAME}
 
-# Prompt for VERSIONING -------------------------------------------------------
-while [ 1 ]; do
-  echo
-  echo 'Shall versioning be enabled (yes/no)?'
-  read -p "(default VERSIONING=no): " VERSIONING
-  VERSIONING=${VERSIONING:-no}
-
-  # to lower case
-  VERSIONING=$(echo "$VERSIONING" | awk '{print tolower($0)}')
-
-  if [ "$VERSIONING" = "yes" ] || [ "$VERSIONING" = "no" ] ; then
-    break;
-  else
-    echo
-    echo "Illegal input! Enter yes or no."
-  fi
-done
-
-# Prompt for CHANGELOG ---------------------------------------------------------
-# !!! ToDo: Checking with team with if is required
-while [ 1 ]; do
-  echo
-  echo "Shall the changelog extension be created (yes/no)?"
-  read -p "(default CHANGELOG=no): " CHANGELOG
-  CHANGELOG=${CHANGELOG:-no}
-
-  # to lower case
-  CHANGELOG=$(echo "$CHANGELOG" | awk '{print tolower($0)}')
-
-  if [ "$CHANGELOG" = "yes" ] || [ "$CHANGELOG" = "no" ] ; then
-    break;
-  else
-    echo
-    echo "Illegal input! Enter yes or no."
-  fi
-done
-
 # Run CREATE_DB.sql to create the 3D City Database instance -------------------
 echo
 echo "Connecting to \"$DBUSER@$DBHOST:$DBPORT/$ORACLE_PDB\" ..."
 echo -n "Enter password: "
-sqlplus -S -L "${DBUSER}@\"${DBHOST}:${DBPORT}/${ORACLE_PDB}\"" @CREATE_DB.sql "${SRID}" "${SRSNAME}" "${VERSIONING}"
+sqlplus -S -L "${DBUSER}@\"${DBHOST}:${DBPORT}/${ORACLE_PDB}\"" @CREATE_DB.sql "${SRID}" "${SRSNAME}"
 echo
 read -rsn1 -p 'Press ENTER to quit.'
 echo
+
+# 3DCityDB create-db.sh #######################################################
+#
+# Maintainer ------------------------------------------------------------------
+#   Karin Patenge
+#   Oracle Global Services Deutschland GmbH
+#   karin.patenge(at)oracle.com
+#
+# Reviewers -------------------------------------------------------------------
+#
+#
+###############################################################################

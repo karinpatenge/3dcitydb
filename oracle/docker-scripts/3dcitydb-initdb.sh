@@ -19,7 +19,7 @@ fi
 
 # ORACLE_PDB ------------------------------------------------------------------
 if [ -z ${ORACLE_PDB+x} ]; then
-  ORACLE_PDB="ORCLPDB1"
+  ORACLE_PDB="FREEPDB1"
 else
   ORACLE_PDB="$ORACLE_PDB"
 fi
@@ -61,13 +61,6 @@ else
   fi
 fi
 
-# VERSIONING ------------------------------------------------------------------
-if [ -z ${VERSIONING+x} ]; then
-  VERSIONING="no"
-else
-  VERSIONING="$VERSIONING"
-fi
-
 # DBUSER ----------------------------------------------------------------------
 if [ -z ${DBUSER+x} ]; then
   DBUSER="citydb"
@@ -76,14 +69,14 @@ else
 fi
 
 # DBHOST ----------------------------------------------------------------------
-if [ -z ${ORACLE_PDB+x} ]; then
+if [ -z ${DBHOST+x} ]; then
   DBHOST="localhost"
 else
   DBHOST="$DBHOST"
 fi
 
 # DBPORT ----------------------------------------------------------------------
-if [ -z ${ORACLE_PDB+x} ]; then
+if [ -z ${DBPORT+x} ]; then
   DBPORT="1521"
 else
   DBPORT="$DBPORT"
@@ -97,11 +90,11 @@ else
 fi
 
 # CHANGELOG -------------------------------------------------------------------
-if [ -z ${CHANGELOG+x} ]; then
-  CHANGELOG="no"
-else
-  CHANGELOG="$CHANGELOG"
-fi
+#if [ -z ${CHANGELOG+x} ]; then
+#  CHANGELOG="no"
+#else
+#  CHANGELOG="$CHANGELOG"
+#fi
 
 # Create user -----------------------------------------------------------------
 echo
@@ -110,19 +103,15 @@ echo "CREATE USER IF NOT EXISTS $DBUSER identified by $ORACLE_PWD;
       ALTER USER $DBUSER QUOTA UNLIMITED ON $TABLESPACE;
       GRANT CONNECT, RESOURCE to $DBUSER;
       GRANT CREATE SESSION TO $DBUSER;
-      GRANT CREATE TRIGGER to $DBUSER;
       GRANT DB_DEVELOPER_ROLE TO $DBUSER;" | sqlplus system/"$ORACLE_PWD"@"$DBHOST":"$DBPORT"/"$ORACLE_PDB"
 echo "Creating user $DBUSER ... done!"
 echo
 
-# Enable GeoRaster (required since Oracle 19c)
-echo "EXECUTE SDO_GEOR_ADMIN.ENABLEGEORASTER;" | sqlplus "$DBUSER"/"$ORACLE_PWD"@"$DBHOST":"$DBPORT"/"$ORACLE_PDB"
-
 # Setup 3DCityDB schema -------------------------------------------------------
 echo
 echo "Setting up 3DCityDB database schema in database $DBUSER ..."
-sqlplus -S -L "$DBUSER"/"$ORACLE_PWD"@"$DBHOST":"$DBPORT"/"$ORACLE_PDB" @CREATE_DB.sql "${SRID}" "${SRSNAME}" "${VERSIONING}"
-echo "Setting up 3DCityDB schema in $DBUSER ...done!"
+sqlplus -S -L "$DBUSER"/"$ORACLE_PWD"@"$DBHOST":"$DBPORT"/"$ORACLE_PDB" @CREATE_DB.sql "${SRID}" "${SRSNAME}"
+echo "Setting up 3DCityDB schema in $DBUSER ... done!"
 echo
 echo "# Setting up 3DCityDB ... done! ################################################"
 
@@ -155,11 +144,12 @@ cat <<EOF
 #   HEIGHT_EPSG         $HEIGHT_EPSG
 #
 # Maintainer ------------------------------------------------------------------
-#   ...
-#   ...
-#   ...
-#   ...
-#   ...
+#   Karin Patenge
+#   Oracle Global Services Deutschland GmbH
+#   karin.patenge(at)oracle.com
+#
+# Reviewers ------------------------------------------------------------------
+#
 #
 ################################################################################
 

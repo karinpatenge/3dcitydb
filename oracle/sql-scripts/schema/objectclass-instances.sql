@@ -14,7 +14,7 @@ VALUES
   (1, null, 'Undefined', 1, 0, 1, @core:Undefined@),
   (2, null, 'AbstractObject', 1, 0, 1, @core:AbstractObject@),
   (3, 2, 'AbstractFeature', 1, 0, 1, @core:AbstractFeature@),
-  (4, null, 'Address', 0, 0, 1, @core:Address@@),
+  (4, null, 'Address', 0, 0, 1, @core:Address@),
   (5, 3, 'AbstractPointCloud', 1, 0, 1, @core:AbstractPointCloud@),
   (6, 3, 'AbstractFeatureWithLifespan', 1, 0, 1, @core:AbstractFeatureWithLifespan@),
   (7, 6, 'AbstractCityObject', 1, 0, 1, @core:AbstractCityObject@),
