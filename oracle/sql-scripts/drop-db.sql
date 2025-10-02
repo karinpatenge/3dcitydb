@@ -1,26 +1,36 @@
-SET client_min_messages TO WARNING;
-\set ON_ERROR_STOP ON
+SET SERVEROUTPUT ON
+SET FEEDBACK ON
+SET VER OFF
 
--- drop 3DCityDB schemas
-\echo
-\echo 'Dropping 3DCityDB schemas ...'
-DROP SCHEMA IF EXISTS citydb_pkg CASCADE;
-
-DO $$
-DECLARE schema_name text;
+SELECT 'Dropping 3DCityDB tables and user objects' AS message FROM DUAL;
 BEGIN
-  FOR schema_name IN
-    SELECT nspname FROM pg_catalog.pg_class c
-    JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-    WHERE c.relname = 'database_srs' AND c.relkind = 'r'
-  LOOP
-    EXECUTE format('DROP SCHEMA %I CASCADE', schema_name);
+  FOR cur_rec IN (
+    SELECT object_name, object_type
+    FROM user_objects
+    WHERE object_type IN ('TABLE', 'VIEW', 'PACKAGE', 'PROCEDURE', 'FUNCTION', 'SEQUENCE', 'TYPE')
+  ) LOOP
+    BEGIN
+	  IF cur_rec.object_type = 'TABLE' THEN
+	    EXECUTE IMMEDIATE 'DROP ' || cur_rec.object_type || ' "' || cur_rec.object_name || '" CASCADE CONSTRAINTS';
+	  ELSIF cur_rec.object_type = 'TYPE' THEN
+	    EXECUTE IMMEDIATE 'DROP ' || cur_rec.object_type || ' "' || cur_rec.object_name || '" FORCE';
+      ELSE
+	    EXECUTE IMMEDIATE 'DROP ' || cur_rec.object_type || ' "' || cur_rec.object_name || '"';
+      END IF;
+    EXCEPTION
+	  WHEN OTHERS THEN
+      NULL;
+    END;
   END LOOP;
-END
-$$;
 
--- update search_path
-ALTER DATABASE :"DBNAME" RESET search_path;
+  -- remove spatial metadata
+  EXECUTE IMMEDIATE 'DELETE FROM user_sdo_geom_metadata';
+END;
+/
 
-\echo
-\echo '3DCityDB instance successfully removed.'
+PURGE RECYCLEBIN;
+
+SELECT '3DCityDB instance successfully removed!' AS message FROM DUAL;
+
+QUIT;
+/
