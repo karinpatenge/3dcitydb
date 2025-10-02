@@ -51,5 +51,5 @@ BEGIN
 END;
 /
 
---- success message
+-- success message
 SELECT '3DCityDB instance successfully created.' AS message FROM dual;
